@@ -165,6 +165,11 @@ where
     pub fn side_panel(&mut self, ctx: &egui::Context) {
         if self.app.is_side_panel() {
             egui::SidePanel::right("my_panel")
+                .frame(
+                    egui::Frame::central_panel(&ctx.style())
+                        .inner_margin(0)
+                        .outer_margin(0),
+                )
                 .min_width(self.settings.min_width_sidebar)
                 .show(ctx, |side_panel_ui| {
                     self.app.side_panel(side_panel_ui, &mut self.error_manager);

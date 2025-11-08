@@ -84,6 +84,12 @@ impl From<String> for AppError {
     }
 }
 
+impl From<&str> for AppError {
+    fn from(message: &str) -> Self {
+        Self::new(message.to_string())
+    }
+}
+
 impl From<io::Error> for AppError {
     fn from(error: io::Error) -> Self {
         Self {
