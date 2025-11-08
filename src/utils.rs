@@ -86,7 +86,7 @@ pub fn get_save_path(current_path: Option<PathBuf>) -> Result<Option<PathBuf>, A
 #[cfg(target_arch = "wasm32")]
 pub fn get_save_path(current_path: Option<PathBuf>) -> Result<Option<PathBuf>, AppError> {
     match current_path {
-        Some(p) => Ok(p),
-        None => Ok(PathBuf::from("file")),
+        Some(p) => Ok(Some(p)),
+        None => Ok(Some(PathBuf::from("file"))),
     }
 }
