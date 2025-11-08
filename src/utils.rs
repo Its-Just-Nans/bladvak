@@ -1,7 +1,7 @@
 //! utility functions
 
-use std::path::PathBuf;
 use crate::AppError;
+use std::path::PathBuf;
 
 /// Save the data to a file
 /// # Errors
@@ -28,15 +28,15 @@ pub fn save_file(data: &[u8], path_file: &PathBuf) -> Result<(), String> {
     log::info!("Saving file to {:?}", path_file);
     let filename = match path_file.file_name() {
         Some(name) => name.to_str().ok_or("Cannot get filename")?,
-        None => "image.png",
+        None => "file.png",
     };
 
     let array_data = Array::new();
     array_data.push(&js_sys::Uint8Array::from(data));
     let blob = web_sys::Blob::new_with_u8_array_sequence(&array_data)
-        .map_err(|_| "Cannot create image data")?;
+        .map_err(|_| "Cannot create file data")?;
     let url = web_sys::Url::create_object_url_with_blob(&blob)
-        .map_err(|_| "Cannot create image url data")?;
+        .map_err(|_| "Cannot create file url data")?;
     // create link
     let document = web_sys::window()
         .ok_or("Cannot get the website window")?
@@ -63,9 +63,8 @@ pub fn save_file(data: &[u8], path_file: &PathBuf) -> Result<(), String> {
 /// # Errors
 /// Failed if the input is wrong
 #[cfg(not(target_arch = "wasm32"))]
-pub fn get_save_path(current_path: Option<PathBuf>) -> Result<PathBuf, AppError> {
+pub fn get_save_path(current_path: Option<PathBuf>) -> Result<Option<PathBuf>, AppError> {
     use rfd::FileDialog;
-    use std::path::Path;
     let path = FileDialog::new()
         .set_directory(match &current_path {
             Some(path) => path.parent().ok_or("Cannot get parent in the path")?,
@@ -79,18 +78,13 @@ pub fn get_save_path(current_path: Option<PathBuf>) -> Result<PathBuf, AppError>
             None => std::path::Path::new("file").to_string_lossy(),
         })
         .save_file();
-    let res = if let Some(path) = path {
-        path
-    } else {
-        Path::new(".").to_path_buf()
-    };
-    Ok(res)
+    Ok(path)
 }
 /// Get a new path
 /// # Errors
 /// No error in wasm
 #[cfg(target_arch = "wasm32")]
-pub fn get_save_path(current_path: Option<PathBuf>) -> Result<PathBuf, AppError> {
+pub fn get_save_path(current_path: Option<PathBuf>) -> Result<Option<PathBuf>, AppError> {
     match current_path {
         Some(p) => Ok(p),
         None => Ok(PathBuf::from("file")),
