@@ -16,6 +16,7 @@ pub mod app;
 pub mod errors;
 pub mod file_handler;
 pub mod settings;
+pub mod utils;
 
 pub use app::{Bladvak, BladvakApp};
 pub use errors::{AppError, ErrorManager};
