@@ -17,16 +17,17 @@ pub mod errors;
 pub mod file_handler;
 pub mod settings;
 
+pub use app::{Bladvak, BladvakApp};
+pub use errors::ErrorManager;
+
 /// re-export
-mod export {
+pub mod export {
     /// egui re-export
-    mod egui {
-        #[allow(unused_imports)]
+    pub mod egui {
         pub use egui::*;
     }
     /// eframe re-export
-    mod eframe {
-        #[allow(unused_imports)]
+    pub mod eframe {
         pub use eframe::*;
     }
 }
