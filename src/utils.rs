@@ -1,6 +1,7 @@
 //! utility functions
 
 use std::path::PathBuf;
+use crate::AppError;
 
 /// Save the data to a file
 /// # Errors
@@ -56,4 +57,42 @@ pub fn save_file(data: &[u8], path_file: &PathBuf) -> Result<(), String> {
     // revoke url
     web_sys::Url::revoke_object_url(&url)
         .map_err(|_| "Cannot remove object url with revoke_object_url".into())
+}
+
+/// Get the save path
+/// # Errors
+/// Failed if the input is wrong
+#[cfg(not(target_arch = "wasm32"))]
+pub fn get_save_path(current_path: Option<PathBuf>) -> Result<PathBuf, AppError> {
+    use rfd::FileDialog;
+    use std::path::Path;
+    let path = FileDialog::new()
+        .set_directory(match &current_path {
+            Some(path) => path.parent().ok_or("Cannot get parent in the path")?,
+            None => std::path::Path::new("."),
+        })
+        .set_file_name(match &current_path {
+            Some(path) => path
+                .file_name()
+                .ok_or("Cannot get file name")?
+                .to_string_lossy(),
+            None => std::path::Path::new("file").to_string_lossy(),
+        })
+        .save_file();
+    let res = if let Some(path) = path {
+        path
+    } else {
+        Path::new(".").to_path_buf()
+    };
+    Ok(res)
+}
+/// Get a new path
+/// # Errors
+/// No error in wasm
+#[cfg(target_arch = "wasm32")]
+pub fn get_save_path(current_path: Option<PathBuf>) -> Result<PathBuf, AppError> {
+    match current_path {
+        Some(p) => Ok(p),
+        None => Ok(PathBuf::from("file")),
+    }
 }
