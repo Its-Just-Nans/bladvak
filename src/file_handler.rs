@@ -42,6 +42,7 @@ impl FileHandler {
     pub fn handle_file_open(&mut self) {
         self.file_upload = Some(Promise::spawn_local(async {
             let file_selected = rfd::AsyncFileDialog::new().pick_file().await;
+            log::debug!("{:?}", file_selected);
             if let Some(curr_file) = file_selected {
                 let buf = curr_file.read().await;
                 return Ok(File {
@@ -91,10 +92,7 @@ impl FileHandler {
                     let res = data;
                     Ok(Some(res.clone()))
                 }
-                Some(Err(e)) => {
-                    let err = e.clone();
-                    Err(err)
-                }
+                Some(Err(e)) => Err(e.clone()),
                 None => Ok(None),
             },
             None => Ok(None),

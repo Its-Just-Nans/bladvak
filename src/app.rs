@@ -303,13 +303,13 @@ where
                 if let Err(e) = self.app.handle_file(file.as_ref()) {
                     self.error_manager.add_error(e);
                 }
+                self.file_handler.reset();
             }
             Ok(None) => {}
             Err(err) => {
                 self.error_manager.add_error(err);
             }
         }
-        self.file_handler.reset();
 
         self.show_setting(ctx);
     }
