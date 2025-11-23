@@ -28,7 +28,9 @@ pub trait BladvakApp: Sized {
     /// hook on the file menu
     fn menu_file(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager);
     /// app name
-    fn name(&self) -> String;
+    fn name() -> String;
+    /// repo URL
+    fn repo_url() -> String;
 
     /// should display a side_panel
     fn is_open_button(&self) -> bool;
@@ -148,11 +150,8 @@ where
                         ui.ctx().set_theme(theme_preference);
                     });
                     ui.add(
-                        egui::Hyperlink::from_label_and_url(
-                            "Github repo",
-                            "https://github.com/Its-Just-Nans/tarsier",
-                        )
-                        .open_in_new_tab(true),
+                        egui::Hyperlink::from_label_and_url("Repo", M::repo_url())
+                            .open_in_new_tab(true),
                     );
                     egui::warn_if_debug_build(ui);
                 });
@@ -213,7 +212,7 @@ where
         let args: Vec<String> = env::args().collect();
 
         eframe::run_native(
-            "tarsier",
+            &M::name(),
             native_options,
             Box::new(|cc| {
                 if args.is_empty() {
@@ -271,7 +270,7 @@ where
                         loading_text.set_inner_html(
                             "<p> The app has crashed. See the developer console for details. </p>",
                         );
-                        panic!("Failed to start tarsier: {e:?}");
+                        panic!("Failed to start app: {e:?}");
                     }
                 }
             }
