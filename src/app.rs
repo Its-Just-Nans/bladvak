@@ -216,9 +216,9 @@ where
             native_options,
             Box::new(|cc| {
                 if args.is_empty() {
-                    Ok(Box::new(Bladvak::<M>::try_new_with_args(cc, &args)?))
-                } else {
                     Ok(Box::new(Bladvak::<M>::try_new(cc)?))
+                } else {
+                    Ok(Box::new(Bladvak::<M>::try_new_with_args(cc, &args)?))
                 }
             }),
         )
