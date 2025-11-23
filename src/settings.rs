@@ -61,7 +61,7 @@ where
         self.show_error_manager(ctx);
         if self.settings.open {
             let modal = Modal::new(Id::new("Modal settings")).show(ctx, |ui| {
-                ui.label(format!("{} settings", self.app.name()));
+                ui.label(format!("{} settings", M::name()));
                 ui.separator();
                 ui.checkbox(&mut self.settings.show_inspection, "Debug panel");
                 ui.separator();
