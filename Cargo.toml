@@ -1,6 +1,6 @@
 [package]
 name = "bladvak"
-version = "1.0.7"
+version = "1.0.8"
 edition = "2024"
 description = "Base egui/eframe app - bladvak means 'pickaxe' in Gobbledegook"
 license = "MIT"
@@ -29,7 +29,7 @@ log = "0.4"
 # You only need serde if you want app persistence:
 serde = { version = "1", features = ["derive"] }
 egui_extras = { version = "0.33", features = ["all_loaders"] }
-rfd = "0.15.4"
+rfd = "0.16.0"
 poll-promise = { version = "0.3", features = ["web"] }
 
 

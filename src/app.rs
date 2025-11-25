@@ -299,16 +299,17 @@ where
 
         match self.file_handler.handle_files(ctx) {
             Ok(Some(file)) => {
-                if let Err(e) = self.app.handle_file(file.as_ref()) {
-                    self.error_manager.add_error(e);
+                if let Err(err) = self.app.handle_file(&file.data) {
+                    self.error_manager.add_error(err);
                 }
-                self.file_handler.reset();
             }
-            Ok(None) => {}
+            Ok(None) => {
+                // nothing to do
+            }
             Err(err) => {
                 self.error_manager.add_error(err);
             }
-        }
+        };
 
         self.show_setting(ctx);
     }

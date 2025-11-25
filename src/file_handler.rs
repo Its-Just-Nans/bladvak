@@ -6,7 +6,7 @@ use std::{fmt::Debug, fs::read, sync::Arc};
 use crate::errors::AppError;
 
 /// File object
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct File {
     /// File data
     pub data: Arc<Vec<u8>>,
@@ -21,7 +21,20 @@ pub struct FileHandler {
 
     /// File upload handling
     #[serde(skip)]
-    pub file_upload: Option<Promise<Result<File, AppError>>>,
+    pub file_upload: Option<Promise<Result<FileState, AppError>>>,
+}
+
+/// File state
+#[derive(Clone)]
+pub enum FileState {
+    /// File is not selected
+    NotSelected,
+    /// File is being uploaded or selected
+    UploadedOrSelected,
+    /// No file upload
+    NoUpload,
+    /// File is ready
+    Ready(File),
 }
 
 impl Debug for FileHandler {
@@ -41,16 +54,17 @@ impl FileHandler {
     #[cfg(target_arch = "wasm32")]
     pub fn handle_file_open(&mut self) {
         self.file_upload = Some(Promise::spawn_local(async {
+            log::debug!("rfd start");
             let file_selected = rfd::AsyncFileDialog::new().pick_file().await;
-            log::debug!("{:?}", file_selected);
+            log::debug!("rfd result {:?}", file_selected);
             if let Some(curr_file) = file_selected {
                 let buf = curr_file.read().await;
-                return Ok(File {
+                return Ok(FileState::Ready(File {
                     data: Arc::new(buf),
-                });
+                }));
             }
             // no file selected
-            Err(AppError::new_fake("Upload: no file Selected".to_string()))
+            Ok(FileState::NotSelected)
         }));
     }
 
@@ -69,13 +83,15 @@ impl FileHandler {
                             return Err(AppError::new(e.to_string()));
                         }
                     };
-                    return Ok(File {
+                    return Ok(FileState::Ready(File {
                         data: Arc::new(buf),
-                    });
+                    }));
+                } else {
+                    return Err(AppError::new("Invalid file path".to_string()));
                 }
             }
             // no file selected
-            Err(AppError::new_fake("Upload: no file Selected".to_string()))
+            Ok(FileState::NotSelected)
         }))
     }
 
@@ -85,17 +101,14 @@ impl FileHandler {
     }
 
     /// Handle file upload
-    fn handle_file_upload(&mut self) -> Result<Option<Arc<Vec<u8>>>, AppError> {
+    fn handle_file_upload(&mut self) -> Result<FileState, AppError> {
         match &self.file_upload {
             Some(result) => match result.ready() {
-                Some(Ok(File { data, .. })) => {
-                    let res = data;
-                    Ok(Some(res.clone()))
-                }
+                Some(Ok(state)) => Ok(state.clone()),
                 Some(Err(e)) => Err(e.clone()),
-                None => Ok(None),
+                None => Ok(FileState::UploadedOrSelected), // promise not ready
             },
-            None => Ok(None),
+            None => Ok(FileState::NoUpload), // no file upload
         }
     }
 
@@ -121,18 +134,39 @@ impl FileHandler {
     /// Handle the files
     /// # Errors
     /// Can return an error if fails to handle files
-    pub fn handle_files(&mut self, ctx: &egui::Context) -> Result<Option<Arc<Vec<u8>>>, AppError> {
+    pub fn handle_files(&mut self, ctx: &egui::Context) -> Result<Option<File>, AppError> {
         ctx.input(|i| {
             if !i.raw.dropped_files.is_empty() {
                 // read the first file
                 self.dropped_files.clone_from(&i.raw.dropped_files);
             }
         });
-        if let Some(content) = self.handle_file_upload()? {
-            return Ok(Some(content));
+        match self.handle_file_upload() {
+            Ok(state) => match state {
+                FileState::NotSelected => {
+                    log::info!("No file selected");
+                    self.reset();
+                }
+                FileState::UploadedOrSelected => {
+                    log::info!("File is being uploaded or selected...");
+                    return Ok(None);
+                }
+                FileState::Ready(data) => {
+                    log::info!("File uploaded successfully");
+                    self.reset();
+                    return Ok(Some(data));
+                }
+                FileState::NoUpload => {
+                    self.reset();
+                }
+            },
+            Err(e) => {
+                self.reset();
+                return Err(e);
+            }
         }
         if let Some(content) = self.handle_file_dropped()? {
-            return Ok(Some(content));
+            return Ok(Some(File { data: content }));
         }
         Ok(None)
     }
