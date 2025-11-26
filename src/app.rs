@@ -1,7 +1,9 @@
 //! App and app wrapper definitions
 
-use eframe::CreationContext;
-use egui::ThemePreference;
+use eframe::{
+    CreationContext,
+    egui::{self, ThemePreference},
+};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
@@ -311,6 +313,7 @@ where
             }
         };
 
+        self.show_error_manager(ctx);
         self.show_setting(ctx);
     }
 }

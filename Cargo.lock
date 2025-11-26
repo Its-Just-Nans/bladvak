@@ -531,10 +531,9 @@ dependencies = [
 
 [[package]]
 name = "bladvak"
-version = "1.0.8"
+version = "1.0.9"
 dependencies = [
  "eframe",
- "egui",
  "egui_extras",
  "env_logger",
  "js-sys",
@@ -1023,6 +1022,7 @@ dependencies = [
  "mime_guess2",
  "profiling",
  "resvg",
+ "serde",
 ]
 
 [[package]]
@@ -1079,6 +1079,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6866f3bfdf8207509a033af1a75a7b08abda06bbaaeae6669323fd5a097df2e9"
 dependencies = [
  "enum-map-derive",
+ "serde",
 ]
 
 [[package]]

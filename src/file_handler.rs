@@ -1,5 +1,6 @@
 //! File handler
 
+use eframe::egui;
 use poll_promise::Promise;
 use std::{fmt::Debug, fs::read, sync::Arc};
 

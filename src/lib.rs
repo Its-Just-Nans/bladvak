@@ -21,14 +21,22 @@ pub mod utils;
 pub use app::{Bladvak, BladvakApp};
 pub use errors::{AppError, ErrorManager};
 
-/// re-export
-pub mod export {
-    /// egui re-export
-    pub mod egui {
-        pub use egui::*;
-    }
-    /// eframe re-export
-    pub mod eframe {
-        pub use eframe::*;
-    }
+/// eframe re-export
+pub mod eframe {
+    pub use eframe::*;
+}
+
+/// egui_extras re-export
+pub mod egui_extras {
+    pub use egui_extras::*;
+}
+
+/// log re-export
+pub mod log {
+    pub use log::*;
+}
+
+/// rfd re-export
+pub mod rfd {
+    pub use rfd::*;
 }

@@ -1,6 +1,6 @@
 //! Settings component
 
-use egui::{Context, Id, Modal};
+use eframe::egui::{self, Context, Id, Modal};
 
 use crate::app::{Bladvak, BladvakApp};
 
@@ -42,11 +42,15 @@ where
         }
         egui::Window::new("Errors")
             .open(&mut self.error_manager.is_open)
+            .vscroll(true)
             .show(ctx, |ui| {
                 for error in &self.error_manager.errors {
                     ui.label(error.message.clone());
                 }
             });
+        if !self.error_manager.is_open {
+            self.error_manager.errors.clear();
+        }
         self.error_manager.was_open = self.error_manager.is_open;
     }
 
@@ -58,7 +62,6 @@ where
             .show(ctx, |ui| {
                 ctx.inspection_ui(ui);
             });
-        self.show_error_manager(ctx);
         if self.settings.open {
             let modal = Modal::new(Id::new("Modal settings")).show(ctx, |ui| {
                 ui.label(format!("{} settings", M::name()));
@@ -71,12 +74,7 @@ where
                         self.error_manager = Default::default();
                     });
                 });
-                if ui
-                    .checkbox(&mut self.error_manager.is_open, "Error panel")
-                    .changed()
-                {
-                    self.error_manager.errors.clear();
-                }
+                ui.checkbox(&mut self.error_manager.is_open, "Error panel");
                 self.app.settings(ui, &mut self.error_manager);
                 egui::Sides::new().show(
                     ui,
