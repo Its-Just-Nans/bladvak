@@ -52,4 +52,3 @@ pub mod js_sys {
 pub mod web_sys {
     pub use web_sys::*;
 }
-
