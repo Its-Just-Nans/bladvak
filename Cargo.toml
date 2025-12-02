@@ -1,6 +1,6 @@
 [package]
 name = "bladvak"
-version = "1.0.9"
+version = "1.0.10"
 edition = "2024"
 description = "Base egui/eframe app - bladvak means 'pickaxe' in Gobbledegook"
 license = "MIT"
@@ -38,7 +38,7 @@ env_logger = "0.11"
 # web:
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4"
-web-sys = { version = "0.3.82", features = [
+web-sys = { version = "0.3.83", features = [
     "Url",
 ] } # to access the DOM (to hide the loading text)
 js-sys = "0.3"

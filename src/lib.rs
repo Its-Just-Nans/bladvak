@@ -40,3 +40,16 @@ pub mod log {
 pub mod rfd {
     pub use rfd::*;
 }
+
+/// js_sys re-export
+#[cfg(target_arch = "wasm32")]
+pub mod js_sys {
+    pub use js_sys::*;
+}
+
+/// web_sys re-export
+#[cfg(target_arch = "wasm32")]
+pub mod web_sys {
+    pub use web_sys::*;
+}
+
