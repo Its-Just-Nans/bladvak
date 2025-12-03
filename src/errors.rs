@@ -85,13 +85,13 @@ impl Error for AppError {
 #[derive(Debug, Default)]
 pub struct ErrorManager {
     /// List of errors
-    pub errors: Vec<AppError>,
+    pub(crate) errors: Vec<AppError>,
 
     /// Check if it is open
-    pub is_open: bool,
+    pub(crate) is_open: bool,
 
     /// Check if it was open
-    pub was_open: bool,
+    pub(crate) was_open: bool,
 }
 
 impl ErrorManager {
@@ -105,17 +105,6 @@ impl ErrorManager {
     /// Add an error
     pub fn add_error(&mut self, error: AppError) {
         self.errors.push(error);
-    }
-
-    /// Handle an error
-    pub fn handle_error<T>(&mut self, error: Result<T, impl Into<AppError>>) -> Option<T> {
-        match error {
-            Ok(value) => Some(value),
-            Err(e) => {
-                self.add_error(e.into());
-                None
-            }
-        }
     }
 
     /// Errors Title

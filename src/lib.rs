@@ -21,34 +21,14 @@ pub mod utils;
 pub use app::{Bladvak, BladvakApp};
 pub use errors::{AppError, ErrorManager};
 
-/// eframe re-export
-pub mod eframe {
-    pub use eframe::*;
-}
+/// re-export
+pub use eframe;
+pub use egui_extras;
+pub use log;
+pub use rfd;
 
-/// egui_extras re-export
-pub mod egui_extras {
-    pub use egui_extras::*;
-}
-
-/// log re-export
-pub mod log {
-    pub use log::*;
-}
-
-/// rfd re-export
-pub mod rfd {
-    pub use rfd::*;
-}
-
-/// js_sys re-export
+/// re-export wasm
 #[cfg(target_arch = "wasm32")]
-pub mod js_sys {
-    pub use js_sys::*;
-}
-
-/// web_sys re-export
+pub use js_sys;
 #[cfg(target_arch = "wasm32")]
-pub mod web_sys {
-    pub use web_sys::*;
-}
+pub use web_sys;
