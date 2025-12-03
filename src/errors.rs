@@ -103,8 +103,8 @@ impl ErrorManager {
     }
 
     /// Add an error
-    pub fn add_error(&mut self, error: AppError) {
-        self.errors.push(error);
+    pub fn add_error<E: Into<AppError>>(&mut self, error: E) {
+        self.errors.push(error.into());
     }
 
     /// Errors Title
