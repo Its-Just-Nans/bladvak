@@ -70,6 +70,15 @@ impl From<FromUtf8Error> for AppError {
     }
 }
 
+impl From<std::num::ParseFloatError> for AppError {
+    fn from(error: std::num::ParseFloatError) -> Self {
+        Self {
+            message: error.to_string(),
+            source: Some(Arc::new(error)),
+        }
+    }
+}
+
 impl Error for AppError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         // Return a reference to the inner error, if present
