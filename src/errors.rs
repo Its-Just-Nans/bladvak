@@ -32,9 +32,12 @@ impl AppError {
     }
 
     /// Create new Normal
-    pub fn new_with_source(source: Arc<dyn std::error::Error + Send + Sync>) -> Self {
+    pub fn new_with_source<S: Into<String>>(
+        message: S,
+        source: Arc<dyn std::error::Error + Send + Sync>,
+    ) -> Self {
         Self {
-            message: source.to_string(),
+            message: message.into(),
             source: Some(source),
         }
     }
@@ -87,6 +90,17 @@ impl Error for AppError {
             let err: &(dyn Error + 'static) = &**arc;
             err
         })
+    }
+}
+
+impl<S, B> From<(S, B)> for AppError
+where
+    S: Into<String>,
+    B: std::error::Error + Send + Sync + 'static,
+{
+    fn from(value: (S, B)) -> Self {
+        // value.0 is the string, value.1 is the error
+        AppError::new_with_source(value.0.into(), Arc::new(value.1))
     }
 }
 
