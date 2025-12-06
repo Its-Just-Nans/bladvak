@@ -1,7 +1,7 @@
 //! utility functions
-
-use crate::AppError;
 use std::path::PathBuf;
+
+use crate::{AppError, Bladvak, BladvakApp};
 
 /// Save the data to a file
 /// # Errors
@@ -89,4 +89,19 @@ pub fn get_save_path(current_path: Option<PathBuf>) -> Result<Option<PathBuf>, A
         Some(p) => Ok(Some(p)),
         None => Ok(Some(PathBuf::from("file"))),
     }
+}
+
+/// Load previous app state (if any).
+// eframe: Note that you must enable the `persistence` feature for this to work.
+pub fn get_saved_app_state<M: BladvakApp + serde::de::DeserializeOwned + Default>(
+    cc: &eframe::CreationContext<'_>,
+) -> M {
+    if let Some(storage) = cc.storage
+        && let Some(saved_app_state) = eframe::get_value::<Bladvak<M>>(storage, eframe::APP_KEY)
+    {
+        log::info!("Loading saved app state");
+        return saved_app_state.app;
+    }
+    log::info!("Loading default app state");
+    M::default()
 }

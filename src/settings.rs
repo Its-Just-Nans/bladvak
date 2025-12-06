@@ -1,6 +1,7 @@
 //! Settings component
 
 use eframe::egui::{self, Context, Id, Modal};
+use serde::{Deserialize, Serialize};
 
 use crate::app::{Bladvak, BladvakApp};
 
@@ -33,7 +34,7 @@ impl Default for Settings {
 
 impl<M> Bladvak<M>
 where
-    M: BladvakApp,
+    M: BladvakApp + Serialize + for<'a> Deserialize<'a> + 'static,
 {
     /// Show the error manager ui
     pub fn show_error_manager(&mut self, ctx: &Context) {
@@ -55,7 +56,7 @@ where
     }
 
     /// Show settings Ui
-    pub fn show_setting(&mut self, ctx: &Context) {
+    pub fn show_setting(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
         egui::Window::new("Inspection")
             .open(&mut self.settings.show_inspection)
             .vscroll(true)
@@ -64,7 +65,15 @@ where
             });
         if self.settings.open {
             let modal = Modal::new(Id::new("Modal settings")).show(ctx, |ui| {
-                ui.label(format!("{} settings", M::name()));
+                ui.horizontal(|ui| {
+                    ui.label(format!("{} settings", M::name()));
+                    ui.button("⟳").clicked().then(|| {
+                        if let Some(storage) = frame.storage_mut() {
+                            eframe::set_value(storage, eframe::APP_KEY, self);
+                            log::info!("Storage reset");
+                        }
+                    });
+                });
                 ui.separator();
                 ui.checkbox(&mut self.settings.show_inspection, "Debug panel");
                 ui.separator();

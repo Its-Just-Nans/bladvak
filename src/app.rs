@@ -63,6 +63,7 @@ pub struct Bladvak<App> {
     pub(crate) error_manager: ErrorManager,
 
     /// File Handler
+    #[serde(skip)]
     pub(crate) file_handler: FileHandler,
 }
 
@@ -290,7 +291,7 @@ where
     }
 
     /// Called each time the UI needs repainting, which may be many times per second.
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         self.top_panel(ctx);
 
         if self.settings.right_panel {
@@ -314,6 +315,6 @@ where
         };
 
         self.show_error_manager(ctx);
-        self.show_setting(ctx);
+        self.show_setting(ctx, frame);
     }
 }
