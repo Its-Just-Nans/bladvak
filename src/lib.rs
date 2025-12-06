@@ -28,6 +28,7 @@ pub use eframe;
 pub use egui_extras;
 pub use log;
 pub use rfd;
+pub use serde;
 
 /// re-export wasm
 #[cfg(target_arch = "wasm32")]
