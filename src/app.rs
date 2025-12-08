@@ -31,6 +31,8 @@ pub trait BladvakApp: Sized {
     fn menu_file(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager);
     /// app name
     fn name() -> String;
+    /// app version
+    fn version() -> String;
     /// repo URL
     fn repo_url() -> String;
 
@@ -121,18 +123,11 @@ where
 
             egui::MenuBar::new().ui(ui, |ui| {
                 ui.menu_button("File", |ui| {
-                    let is_web = cfg!(target_arch = "wasm32");
-                    if !is_web && ui.button("Quit").clicked() {
-                        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                    }
-                    if ui.button("Settings").clicked() {
-                        self.settings.open = true;
-                    }
+                    self.app.menu_file(ui, &mut self.error_manager);
                     if self.app.is_open_button() && ui.button("Open").clicked() {
                         ui.close();
                         self.file_handler.handle_file_open();
                     }
-                    self.app.menu_file(ui, &mut self.error_manager);
                     ui.menu_button("Theme", |ui| {
                         let mut theme_preference = ui.ctx().options(|opt| opt.theme_preference);
                         ui.selectable_value(
@@ -152,10 +147,13 @@ where
                         );
                         ui.ctx().set_theme(theme_preference);
                     });
-                    ui.add(
-                        egui::Hyperlink::from_label_and_url("Repo", M::repo_url())
-                            .open_in_new_tab(true),
-                    );
+                    if ui.button("Settings").clicked() {
+                        self.settings.open = true;
+                    }
+                    let is_web = cfg!(target_arch = "wasm32");
+                    if !is_web && ui.button("Quit").clicked() {
+                        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                    }
                     egui::warn_if_debug_build(ui);
                 });
                 self.app.top_panel(ui, &mut self.error_manager);

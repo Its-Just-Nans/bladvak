@@ -66,7 +66,18 @@ where
         if self.settings.open {
             let modal = Modal::new(Id::new("Modal settings")).show(ctx, |ui| {
                 ui.horizontal(|ui| {
-                    ui.label(format!("{} settings", M::name()));
+                    ui.horizontal(|ui| {
+                        ui.vertical(|ui| {
+                            ui.horizontal_wrapped(|ui| {
+                                ui.spacing_mut().item_spacing.x = 0.0;
+                                ui.label(format!("{}@{} settings", M::name(), M::version()));
+                            });
+                            ui.add(
+                                egui::Hyperlink::from_label_and_url("repository", M::repo_url())
+                                    .open_in_new_tab(true),
+                            );
+                        });
+                    });
                     ui.button("⟳").clicked().then(|| {
                         if let Some(storage) = frame.storage_mut() {
                             eframe::set_value(storage, eframe::APP_KEY, self);
@@ -74,8 +85,6 @@ where
                         }
                     });
                 });
-                ui.separator();
-                ui.checkbox(&mut self.settings.show_inspection, "Debug panel");
                 ui.separator();
                 ui.horizontal(|ui| {
                     ui.label(format!("{} settings", self.error_manager.title()));
@@ -85,13 +94,31 @@ where
                 });
                 ui.checkbox(&mut self.error_manager.is_open, "Error panel");
                 self.app.settings(ui, &mut self.error_manager);
-                egui::Sides::new().show(
+                ui.separator();
+                egui::Sides::new().spacing(20.0).show(
                     ui,
-                    |_ui| {},
                     |modal_ui| {
-                        if modal_ui.button("Close").clicked() {
-                            modal_ui.close();
-                        }
+                        modal_ui.vertical(|ui| {
+                            ui.checkbox(&mut self.settings.show_inspection, "Debug panel");
+                            ui.horizontal_wrapped(|ui| {
+                                ui.spacing_mut().item_spacing.x = 0.0;
+                                ui.label("Using ");
+                                ui.add(
+                                    egui::Hyperlink::from_label_and_url(
+                                        concat!("bladvak", env!("CARGO_PKG_VERSION")),
+                                        "https://github.com/Its-Just-Nans/bladvak",
+                                    )
+                                    .open_in_new_tab(true),
+                                );
+                            });
+                        });
+                    },
+                    |modal_ui| {
+                        modal_ui.horizontal_centered(|ui| {
+                            if ui.button("Close").clicked() {
+                                ui.close();
+                            }
+                        });
                     },
                 );
             });
