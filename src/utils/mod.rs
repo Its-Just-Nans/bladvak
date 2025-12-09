@@ -3,6 +3,8 @@ use std::path::PathBuf;
 
 use crate::{AppError, Bladvak, BladvakApp};
 
+pub mod grid;
+
 /// Save the data to a file
 /// # Errors
 /// Error if fails to save the file
