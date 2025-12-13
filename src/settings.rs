@@ -105,7 +105,7 @@ where
                                 ui.label("Using ");
                                 ui.add(
                                     egui::Hyperlink::from_label_and_url(
-                                        concat!("bladvak", env!("CARGO_PKG_VERSION")),
+                                        concat!("bladvak@", env!("CARGO_PKG_VERSION")),
                                         "https://github.com/Its-Just-Nans/bladvak",
                                     )
                                     .open_in_new_tab(true),
