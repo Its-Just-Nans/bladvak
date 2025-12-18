@@ -14,7 +14,7 @@ use crate::{
 };
 
 /// App trait
-pub trait BladvakApp: Sized {
+pub trait BladvakApp<'a>: Sized {
     /// Top panel ui
     fn top_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager);
     /// Setting panel ui
@@ -35,6 +35,8 @@ pub trait BladvakApp: Sized {
     fn version() -> String;
     /// repo URL
     fn repo_url() -> String;
+    /// icon
+    fn icon() -> &'a [u8];
 
     /// should display a side_panel
     fn is_open_button(&self) -> bool;
@@ -69,9 +71,17 @@ pub struct Bladvak<App> {
     pub(crate) file_handler: FileHandler,
 }
 
+/// Return type for bladvak_main
+#[cfg(not(target_arch = "wasm32"))]
+pub type MainResult = eframe::Result;
+
+/// Return type for bladvak_main - wasm
+#[cfg(target_arch = "wasm32")]
+pub type MainResult = ();
+
 impl<M> Bladvak<M>
 where
-    M: BladvakApp + Debug + Serialize + for<'a> Deserialize<'a> + 'static,
+    M: for<'a> BladvakApp<'a> + Debug + Serialize + for<'a> Deserialize<'a> + 'static,
 {
     /// Try to create a new app with args
     /// # Errors
@@ -187,14 +197,14 @@ where
     /// # Errors
     /// Can return an error if fails to create new app
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn bladvak_main(icon: &[u8]) -> eframe::Result {
+    pub fn bladvak_main() -> eframe::Result {
         use std::env;
 
         use crate::app::Bladvak;
 
         env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
 
-        let ico = match eframe::icon_data::from_png_bytes(icon) {
+        let ico = match eframe::icon_data::from_png_bytes(M::icon()) {
             Ok(ico) => ico,
             Err(e) => {
                 return Err(eframe::Error::AppCreation(
@@ -281,7 +291,7 @@ where
 
 impl<M> eframe::App for Bladvak<M>
 where
-    M: BladvakApp + Debug + Serialize + for<'a> Deserialize<'a> + 'static,
+    M: for<'a> BladvakApp<'a> + Debug + Serialize + for<'a> Deserialize<'a> + 'static,
 {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
@@ -303,6 +313,8 @@ where
                 if let Err(err) = self.app.handle_file(&file.data) {
                     self.error_manager.add_error(err);
                 }
+                // repaint with the file
+                ctx.request_repaint();
             }
             Ok(None) => {
                 // nothing to do

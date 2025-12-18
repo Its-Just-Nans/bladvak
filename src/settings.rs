@@ -34,7 +34,7 @@ impl Default for Settings {
 
 impl<M> Bladvak<M>
 where
-    M: BladvakApp + Serialize + for<'a> Deserialize<'a> + 'static,
+    M: for<'a> BladvakApp<'a> + Serialize + for<'a> Deserialize<'a> + 'static,
 {
     /// Show the error manager ui
     pub fn show_error_manager(&mut self, ctx: &Context) {
