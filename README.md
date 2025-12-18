@@ -9,6 +9,7 @@ Base egui/eframe app - bladvak means 'pickaxe' in Gobbledegook
 
 - [tarsier](https://tarsier.n4n5.dev)
 - [galago](https://galago.n4n5.dev)
+- [wombat](https://wombat.n4n5.dev)
 
 ## LICENSE
 
