@@ -20,8 +20,9 @@ pub mod file_handler;
 pub mod settings;
 pub mod utils;
 
-pub use app::{Bladvak, BladvakApp};
+pub use app::{Bladvak, BladvakApp, MainResult};
 pub use errors::{AppError, ErrorManager};
+pub use file_handler::File;
 
 /// re-export
 pub use eframe;

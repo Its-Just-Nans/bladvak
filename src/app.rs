@@ -9,7 +9,7 @@ use std::fmt::Debug;
 
 use crate::{
     errors::{AppError, ErrorManager},
-    file_handler::FileHandler,
+    file_handler::{File, FileHandler},
     settings::Settings,
 };
 
@@ -26,7 +26,7 @@ pub trait BladvakApp<'a>: Sized {
     /// handle a file input
     /// # Errors
     /// Can return an error if fails to handle file
-    fn handle_file(&mut self, bytes: &[u8]) -> Result<(), AppError>;
+    fn handle_file(&mut self, bytes: File) -> Result<(), AppError>;
     /// hook on the file menu
     fn menu_file(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager);
     /// app name
@@ -310,7 +310,7 @@ where
 
         match self.file_handler.handle_files(ctx) {
             Ok(Some(file)) => {
-                if let Err(err) = self.app.handle_file(&file.data) {
+                if let Err(err) = self.app.handle_file(file) {
                     self.error_manager.add_error(err);
                 }
                 // repaint with the file

@@ -2,7 +2,7 @@
 
 use eframe::egui;
 use poll_promise::Promise;
-use std::{fmt::Debug, fs::read, sync::Arc};
+use std::{fmt::Debug, fs::read, path::PathBuf, sync::Arc};
 
 use crate::errors::AppError;
 
@@ -11,6 +11,8 @@ use crate::errors::AppError;
 pub struct File {
     /// File data
     pub data: Arc<Vec<u8>>,
+    /// Path or filename
+    pub path: PathBuf,
 }
 
 /// File Handler
@@ -62,6 +64,7 @@ impl FileHandler {
                 let buf = curr_file.read().await;
                 return Ok(FileState::Ready(File {
                     data: Arc::new(buf),
+                    path: PathBuf::from(curr_file.file_name()),
                 }));
             }
             // no file selected
@@ -86,6 +89,7 @@ impl FileHandler {
                     };
                     return Ok(FileState::Ready(File {
                         data: Arc::new(buf),
+                        path: path_buf,
                     }));
                 } else {
                     return Err(AppError::new("Invalid file path".to_string()));
@@ -114,7 +118,7 @@ impl FileHandler {
     }
 
     /// Handle file dropped
-    fn handle_file_dropped(&mut self) -> Result<Option<Arc<Vec<u8>>>, AppError> {
+    fn handle_file_dropped(&mut self) -> Result<Option<File>, AppError> {
         if self.dropped_files.is_empty() {
             return Ok(None);
         }
@@ -122,12 +126,18 @@ impl FileHandler {
         if cfg!(not(target_arch = "wasm32")) {
             if let Some(path) = file.path.as_deref() {
                 let file = read(path)?;
-                return Ok(Some(Arc::new(file)));
+                return Ok(Some(File {
+                    data: Arc::new(file),
+                    path: path.to_path_buf(),
+                }));
             }
         } else if cfg!(target_arch = "wasm32")
             && let Some(bytes) = file.bytes.as_deref()
         {
-            return Ok(Some(Arc::new(bytes.to_vec())));
+            return Ok(Some(File {
+                data: Arc::new(bytes.to_vec()),
+                path: file.path.unwrap_or(PathBuf::from(file.name)),
+            }));
         }
         Ok(None)
     }
@@ -166,8 +176,8 @@ impl FileHandler {
                 return Err(e);
             }
         }
-        if let Some(content) = self.handle_file_dropped()? {
-            return Ok(Some(File { data: content }));
+        if let Some(file_dropped) = self.handle_file_dropped()? {
+            return Ok(Some(file_dropped));
         }
         Ok(None)
     }
