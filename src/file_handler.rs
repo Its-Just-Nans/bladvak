@@ -2,7 +2,7 @@
 
 use eframe::egui;
 use poll_promise::Promise;
-use std::{fmt::Debug, fs::read, path::PathBuf, sync::Arc};
+use std::{fmt::Debug, fs::read, path::PathBuf};
 
 use crate::errors::AppError;
 
@@ -10,7 +10,7 @@ use crate::errors::AppError;
 #[derive(Default, Clone)]
 pub struct File {
     /// File data
-    pub data: Arc<Vec<u8>>,
+    pub data: Vec<u8>,
     /// Path or filename
     pub path: PathBuf,
 }
@@ -63,7 +63,7 @@ impl FileHandler {
             if let Some(curr_file) = file_selected {
                 let buf = curr_file.read().await;
                 return Ok(FileState::Ready(File {
-                    data: Arc::new(buf),
+                    data: buf,
                     path: PathBuf::from(curr_file.file_name()),
                 }));
             }
@@ -88,7 +88,7 @@ impl FileHandler {
                         }
                     };
                     return Ok(FileState::Ready(File {
-                        data: Arc::new(buf),
+                        data: buf,
                         path: path_buf,
                     }));
                 } else {
@@ -127,7 +127,7 @@ impl FileHandler {
             if let Some(path) = file.path.as_deref() {
                 let file = read(path)?;
                 return Ok(Some(File {
-                    data: Arc::new(file),
+                    data: file,
                     path: path.to_path_buf(),
                 }));
             }
@@ -135,7 +135,7 @@ impl FileHandler {
             && let Some(bytes) = file.bytes.as_deref()
         {
             return Ok(Some(File {
-                data: Arc::new(bytes.to_vec()),
+                data: bytes.to_vec(),
                 path: file.path.unwrap_or(PathBuf::from(file.name)),
             }));
         }
