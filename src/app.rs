@@ -18,7 +18,15 @@ pub trait BladvakApp<'a>: Sized {
     /// Top panel ui
     fn top_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager);
     /// Setting panel ui
-    fn settings(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager);
+    fn settings_list(&self) -> Vec<String>;
+
+    /// Show settings for the selected menu
+    fn show_setting_for(
+        &mut self,
+        selected: &str,
+        ui: &mut egui::Ui,
+        error_manager: &mut ErrorManager,
+    );
     /// Central panel ui
     fn central_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager);
     /// Side panel ui
@@ -69,6 +77,9 @@ pub struct Bladvak<App> {
     /// File Handler
     #[serde(skip)]
     pub(crate) file_handler: FileHandler,
+
+    /// settings list
+    pub(crate) settings_list: Vec<String>,
 }
 
 /// Return type for bladvak_main
@@ -105,11 +116,13 @@ where
 
     /// helper to create a new app
     pub fn new_with_app(app: M) -> Self {
+        let settings_list = app.settings_list();
         Self {
             app,
             settings: Default::default(),
             error_manager: Default::default(),
             file_handler: Default::default(),
+            settings_list,
         }
     }
 
@@ -184,7 +197,7 @@ where
                 .show(ctx, |side_panel_ui| {
                     self.app.side_panel(side_panel_ui, &mut self.error_manager);
                     side_panel_ui.with_layout(
-                        egui::Layout::bottom_up(egui::Align::LEFT),
+                        egui::Layout::top_down(egui::Align::RIGHT),
                         |ui: &mut egui::Ui| {
                             egui::warn_if_debug_build(ui);
                         },
