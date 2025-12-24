@@ -12,6 +12,9 @@ pub(crate) enum SelectedSetting {
     General,
     /// Panel setting
     Panel,
+    /// Debug setting
+    #[cfg(debug_assertions)]
+    Debug,
     /// Custom setting
     String(String),
 }
@@ -24,9 +27,6 @@ pub(crate) struct Settings {
 
     /// Minimum width for the sidebar
     pub min_width_sidebar: f32,
-
-    /// Right panel toggle
-    pub right_panel: bool,
 
     /// Debug and inspection toggle
     pub show_inspection: bool,
@@ -41,11 +41,14 @@ impl Default for Settings {
             show_inspection: false,
             open: false,
             min_width_sidebar: 200.0,
-            right_panel: true,
             selected_setting: SelectedSetting::General,
         }
     }
 }
+
+/// Empty struct to reset storage
+#[derive(serde::Serialize)]
+struct ResetStorage;
 
 impl<M> Bladvak<M>
 where
@@ -125,17 +128,23 @@ where
                                     );
 
                                     for one_panel in &self.panel_list {
-                                        if one_panel.has_settings(&self.app) {
-                                            let one_setting_name =
-                                                one_panel.name(&self.app).to_string();
+                                        if one_panel.has_settings() {
+                                            let one_setting_name = one_panel.name();
                                             ui.selectable_value(
                                                 &mut self.internal.settings.selected_setting,
-                                                SelectedSetting::String(one_setting_name.clone()),
+                                                SelectedSetting::String(
+                                                    one_setting_name.to_string(),
+                                                ),
                                                 one_setting_name,
                                             );
                                         }
                                     }
-                                    // }
+                                    #[cfg(debug_assertions)]
+                                    ui.selectable_value(
+                                        &mut self.internal.settings.selected_setting,
+                                        SelectedSetting::Debug,
+                                        "Debug",
+                                    );
                                 },
                             );
                         });
@@ -150,13 +159,17 @@ where
                     }
                     SelectedSetting::String(value) => {
                         for one_panel in &self.panel_list {
-                            let panel_name = one_panel.name(&self.app);
+                            let panel_name = one_panel.name();
                             if panel_name == value {
                                 ui.heading(format!("{} settings", panel_name));
                                 ui.separator();
                                 one_panel.ui_settings(&mut self.app, ui, &mut self.error_manager);
                             }
                         }
+                    }
+                    #[cfg(debug_assertions)]
+                    SelectedSetting::Debug => {
+                        self.show_debug_setting(ui);
                     }
                 });
             });
@@ -170,9 +183,9 @@ where
     pub(crate) fn show_panel_setting(&mut self, ui: &mut egui::Ui) {
         ui.heading("Panels");
         for one_panel in &self.panel_list {
-            if one_panel.has_ui(&self.app) {
-                let panel_name = one_panel.name(&self.app).to_string();
-                if let Some(state) = self.internal.panel_state.get_mut(&panel_name) {
+            if one_panel.has_ui() {
+                let panel_name = one_panel.name();
+                if let Some(state) = self.internal.panel_state.get_mut(panel_name) {
                     let is_side_panel = self.app.is_side_panel();
                     ui.horizontal(|ui| {
                         ui.label(panel_name);
@@ -195,11 +208,11 @@ where
         ui.heading(format!("{} settings", M::name()));
         ui.separator();
         ui.horizontal(|ui| {
-            ui.label(format!("Reset storage of {}", M::name()));
+            ui.label(format!("Clean storage of {}", M::name()));
             ui.button("⟳").clicked().then(|| {
                 if let Some(storage) = frame.storage_mut() {
-                    eframe::set_value(storage, eframe::APP_KEY, self);
-                    log::info!("Storage reset");
+                    eframe::set_value(storage, eframe::APP_KEY, &ResetStorage);
+                    log::info!("Storage cleaned");
                 }
             });
         });
@@ -252,5 +265,25 @@ where
                 .open_in_new_tab(true),
             );
         });
+    }
+
+    /// Show debug informations
+    fn show_debug_setting(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Debug");
+
+        ui.label("App state");
+        if let Ok(serialized) = serde_json::to_string(&self.app) {
+            let mut mut_serial = serialized;
+            ui.text_edit_multiline(&mut mut_serial);
+        } else {
+            ui.label("Failed to serialize");
+        }
+        ui.label("Internal state");
+        if let Ok(serialized) = serde_json::to_string(&self.internal) {
+            let mut mut_serial = serialized;
+            ui.text_edit_multiline(&mut mut_serial);
+        } else {
+            ui.label("Failed to serialize");
+        }
     }
 }

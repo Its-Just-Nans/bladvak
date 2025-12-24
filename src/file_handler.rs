@@ -57,9 +57,9 @@ impl FileHandler {
     #[cfg(target_arch = "wasm32")]
     pub fn handle_file_open(&mut self) {
         self.file_upload = Some(Promise::spawn_local(async {
-            log::debug!("rfd start");
+            log::info!("rfd start");
             let file_selected = rfd::AsyncFileDialog::new().pick_file().await;
-            log::debug!("rfd result {:?}", file_selected);
+            log::info!("rfd result {:?}", file_selected);
             if let Some(curr_file) = file_selected {
                 let buf = curr_file.read().await;
                 return Ok(FileState::Ready(File {

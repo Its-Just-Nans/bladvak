@@ -18,6 +18,8 @@ pub trait BladvakApp<'a>: Sized {
     fn panel_list(&self) -> Vec<Box<dyn BladvakPanel<App = Self>>>;
     /// Central panel ui
     fn central_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager);
+    /// Side panel panel ui
+    fn side_panel(&mut self, ui: &mut egui::Ui, func_ui: impl FnOnce(&mut egui::Ui, &mut Self));
 
     /// handle a file input
     /// # Errors
@@ -58,16 +60,16 @@ pub trait BladvakPanel: Debug {
     type App;
 
     /// Name of the panel
-    fn name(&self, app: &Self::App) -> &str;
+    fn name(&self) -> &str;
 
     /// Does this panel has a setting ui
-    fn has_settings(&self, app: &Self::App) -> bool;
+    fn has_settings(&self) -> bool;
 
     /// Panel settings ui
     fn ui_settings(&self, app: &mut Self::App, ui: &mut egui::Ui, error_manager: &mut ErrorManager);
 
     /// Does this panel has an ui
-    fn has_ui(&self, app: &Self::App) -> bool;
+    fn has_ui(&self) -> bool;
 
     /// Panel ui
     fn ui(&self, app: &mut Self::App, ui: &mut egui::Ui, error_manager: &mut ErrorManager);
@@ -140,19 +142,23 @@ where
     /// Can return an error if fails to create new app
     fn try_new_with_args(cc: &CreationContext<'_>, vec_args: &[String]) -> Result<Self, AppError> {
         let saved_state = if let Some(saved) = Self::get_saved_app_state(cc) {
-            log::debug!("Using saved state");
+            log::info!("Using saved state");
             (saved.app, Some(saved.internal))
         } else {
             (M::default(), None)
         };
         let app = M::try_new_with_args(saved_state.0, cc, vec_args)?;
         let panel_list = app.panel_list();
-        let bladvak_internal = if let Some(saved_state) = saved_state.1 {
+        let bladvak_internal = if let Some(saved_state) = saved_state.1
+            && saved_state.panel_state.len() == panel_list.len()
+        {
+            // maybe add a check on the key of the panel_list
+            log::info!("Using saved panels state");
             saved_state
         } else {
             let mut panel_state = BTreeMap::new();
             for one_panel in &panel_list {
-                panel_state.insert(one_panel.name(&app).to_string(), PanelState::default());
+                panel_state.insert(one_panel.name().to_string(), PanelState::default());
             }
             BladvakSavedState {
                 settings: Default::default(),
@@ -178,19 +184,17 @@ where
             )
             .show(ctx, |ui| {
                 self.app.central_panel(ui, &mut self.error_manager);
-                for one_panel in &self.panel_list {
-                    if one_panel.has_ui(&self.app)
-                        && let Some(panel_state) =
-                            self.internal.panel_state.get_mut(one_panel.name(&self.app))
+                for one_panel in self.panel_list.iter().filter(|p| p.has_ui()) {
+                    let panel_name = one_panel.name();
+                    if let Some(panel_state) = self.internal.panel_state.get_mut(panel_name)
                         && let PanelOpen::AsWindows = panel_state.open
                     {
                         let mut open = true;
-                        egui::Window::new("Image info").open(&mut open).show(
-                            ui.ctx(),
-                            |window_ui| {
+                        egui::Window::new(panel_name)
+                            .open(&mut open)
+                            .show(ui.ctx(), |window_ui| {
                                 one_panel.ui(&mut self.app, window_ui, &mut self.error_manager);
-                            },
-                        );
+                            });
                         if !open {
                             panel_state.open = PanelOpen::AsSideBar;
                         }
@@ -232,7 +236,7 @@ where
             .panel_state
             .iter()
             .any(|e| e.1.open == PanelOpen::AsSideBar);
-        if self.app.is_side_panel() && is_panels_in_sidebar {
+        if is_panels_in_sidebar {
             egui::SidePanel::right("my_panel")
                 .frame(
                     egui::Frame::central_panel(&ctx.style())
@@ -241,22 +245,31 @@ where
                 )
                 .min_width(self.internal.settings.min_width_sidebar)
                 .show(ctx, |side_panel_ui| {
-                    for one_panel in &self.panel_list {
-                        if one_panel.has_ui(&self.app)
-                            && let Some(panel_state) =
-                                self.internal.panel_state.get(one_panel.name(&self.app))
-                            && let PanelOpen::AsSideBar = panel_state.open
+                    self.app.side_panel(side_panel_ui, |ui, app| {
+                        for (idx, one_panel) in
+                            self.panel_list
+                                .iter()
+                                .filter(|p| {
+                                    p.has_ui()
+                                        && self.internal.panel_state.get(p.name()).is_some_and(
+                                            |p_state| p_state.open == PanelOpen::AsSideBar,
+                                        )
+                                })
+                                .enumerate()
                         {
-                            one_panel.ui(&mut self.app, side_panel_ui, &mut self.error_manager);
+                            if idx != 0 {
+                                ui.separator();
+                            }
+                            one_panel.ui(app, ui, &mut self.error_manager);
                         }
-                    }
-                    // self.app.side_panel(side_panel_ui, &mut self.error_manager);
-                    side_panel_ui.with_layout(
-                        egui::Layout::bottom_up(egui::Align::RIGHT),
-                        |ui: &mut egui::Ui| {
-                            egui::warn_if_debug_build(ui);
-                        },
-                    );
+                        // self.app.side_panel(side_panel_ui, &mut self.error_manager);
+                        ui.with_layout(
+                            egui::Layout::bottom_up(egui::Align::RIGHT),
+                            |ui: &mut egui::Ui| {
+                                egui::warn_if_debug_build(ui);
+                            },
+                        );
+                    });
                 });
         }
     }
@@ -381,7 +394,7 @@ where
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         self.top_panel(ctx);
 
-        if self.internal.settings.right_panel {
+        if self.app.is_side_panel() {
             self.side_panel(ctx);
         }
 
