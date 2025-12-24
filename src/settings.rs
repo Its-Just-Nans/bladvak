@@ -150,27 +150,36 @@ where
                         });
                     });
 
-                egui::CentralPanel::default().show_inside(ui, |ui| match value {
-                    SelectedSetting::General => {
-                        self.show_general_setting(ui, frame);
-                    }
-                    SelectedSetting::Panel => {
-                        self.show_panel_setting(ui);
-                    }
-                    SelectedSetting::String(value) => {
-                        for one_panel in &self.panel_list {
-                            let panel_name = one_panel.name();
-                            if panel_name == value {
-                                ui.heading(format!("{} settings", panel_name));
-                                ui.separator();
-                                one_panel.ui_settings(&mut self.app, ui, &mut self.error_manager);
+                egui::CentralPanel::default().show_inside(ui, |ui| {
+                    egui::ScrollArea::vertical().show(ui, |ui| {
+                        ui.set_min_width(ui.available_width());
+                        match value {
+                            SelectedSetting::General => {
+                                self.show_general_setting(ui, frame);
+                            }
+                            SelectedSetting::Panel => {
+                                self.show_panel_setting(ui);
+                            }
+                            SelectedSetting::String(value) => {
+                                for one_panel in &self.panel_list {
+                                    let panel_name = one_panel.name();
+                                    if panel_name == value {
+                                        ui.heading(format!("{} settings", panel_name));
+                                        ui.separator();
+                                        one_panel.ui_settings(
+                                            &mut self.app,
+                                            ui,
+                                            &mut self.error_manager,
+                                        );
+                                    }
+                                }
+                            }
+                            #[cfg(debug_assertions)]
+                            SelectedSetting::Debug => {
+                                self.show_debug_setting(ui);
                             }
                         }
-                    }
-                    #[cfg(debug_assertions)]
-                    SelectedSetting::Debug => {
-                        self.show_debug_setting(ui);
-                    }
+                    });
                 });
             });
             if modal.should_close() {
