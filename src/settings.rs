@@ -267,7 +267,7 @@ where
         });
     }
 
-    /// Show debug informations
+    /// Show debug information
     fn show_debug_setting(&mut self, ui: &mut egui::Ui) {
         ui.heading("Debug");
 
