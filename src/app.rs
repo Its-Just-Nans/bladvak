@@ -1,11 +1,8 @@
 //! App and app wrapper definitions
 
-use eframe::{
-    CreationContext,
-    egui::{self, ThemePreference},
-};
+use eframe::{CreationContext, egui};
 use serde::{Deserialize, Serialize};
-use std::fmt::Debug;
+use std::{collections::BTreeMap, fmt::Debug};
 
 use crate::{
     errors::{AppError, ErrorManager},
@@ -18,19 +15,10 @@ pub trait BladvakApp<'a>: Sized {
     /// Top panel ui
     fn top_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager);
     /// Setting panel ui
-    fn settings_list(&self) -> Vec<String>;
-
-    /// Show settings for the selected menu
-    fn show_setting_for(
-        &mut self,
-        selected: &str,
-        ui: &mut egui::Ui,
-        error_manager: &mut ErrorManager,
-    );
+    fn panel_list(&self) -> Vec<Box<dyn BladvakPanel<App = Self>>>;
     /// Central panel ui
     fn central_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager);
-    /// Side panel ui
-    fn side_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager);
+
     /// handle a file input
     /// # Errors
     /// Can return an error if fails to handle file
@@ -51,15 +39,66 @@ pub trait BladvakApp<'a>: Sized {
     /// should display a side_panel
     fn is_side_panel(&self) -> bool;
 
-    /// Builder func
-    /// # Errors
-    /// Can return an error if fails to create new app
-    fn new(cc: &CreationContext<'_>) -> Result<Self, AppError>;
     /// Builder func for native
+    ///
+    /// This functions is called as native AND in web - use [`crate::utils::is_native`] to make conditional code
+    ///
     /// # Errors
     /// Can return an error if fails to create new app
-    #[cfg(not(target_arch = "wasm32"))]
-    fn new_with_args(cc: &CreationContext<'_>, args: &[String]) -> Result<Self, AppError>;
+    fn try_new_with_args(
+        saved_state: Self,
+        cc: &CreationContext<'_>,
+        args: &[String],
+    ) -> Result<Self, AppError>;
+}
+
+/// Trait for Bladvak panel
+pub trait BladvakPanel: Debug {
+    /// Type of the argument - the current App
+    type App;
+
+    /// Name of the panel
+    fn name(&self, app: &Self::App) -> &str;
+
+    /// Does this panel has a setting ui
+    fn has_settings(&self, app: &Self::App) -> bool;
+
+    /// Panel settings ui
+    fn ui_settings(&self, app: &mut Self::App, ui: &mut egui::Ui, error_manager: &mut ErrorManager);
+
+    /// Does this panel has an ui
+    fn has_ui(&self, app: &Self::App) -> bool;
+
+    /// Panel ui
+    fn ui(&self, app: &mut Self::App, ui: &mut egui::Ui, error_manager: &mut ErrorManager);
+}
+
+/// Panel open state
+#[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum PanelOpen {
+    #[default]
+    /// In a window
+    AsWindows,
+    /// In sidebar
+    AsSideBar,
+    /// Hidden state
+    None,
+}
+
+/// Panel state
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+pub struct PanelState {
+    /// open state of the panel
+    pub(crate) open: PanelOpen,
+}
+
+/// Bladvak internal saved state
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BladvakSavedState {
+    /// settings
+    pub(crate) settings: Settings,
+    /// Panel state
+    pub(crate) panel_state: BTreeMap<String, PanelState>,
 }
 
 /// App wrapper
@@ -67,8 +106,9 @@ pub trait BladvakApp<'a>: Sized {
 pub struct Bladvak<App> {
     /// app
     pub(crate) app: App,
-    /// settings
-    pub(crate) settings: Settings,
+
+    /// Bladvak internal saved state
+    pub(crate) internal: BladvakSavedState,
 
     /// error manager/handler
     #[serde(skip)]
@@ -78,8 +118,9 @@ pub struct Bladvak<App> {
     #[serde(skip)]
     pub(crate) file_handler: FileHandler,
 
-    /// settings list
-    pub(crate) settings_list: Vec<String>,
+    /// panel list
+    #[serde(skip)]
+    pub(crate) panel_list: Vec<Box<dyn BladvakPanel<App = App>>>,
 }
 
 /// Return type for bladvak_main
@@ -92,38 +133,39 @@ pub type MainResult = ();
 
 impl<M> Bladvak<M>
 where
-    M: for<'a> BladvakApp<'a> + Debug + Serialize + for<'a> Deserialize<'a> + 'static,
+    M: for<'a> BladvakApp<'a> + Debug + Default + Serialize + for<'a> Deserialize<'a> + 'static,
 {
     /// Try to create a new app with args
     /// # Errors
     /// Can return an error if fails to create new app
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn try_new_with_args(
-        cc: &CreationContext<'_>,
-        vec_args: &[String],
-    ) -> Result<Self, AppError> {
-        let app = M::new_with_args(cc, vec_args)?;
-        Ok(Self::new_with_app(app))
-    }
-
-    /// Try to create a new app
-    /// # Errors
-    /// Can return an error if fails to create new app
-    pub fn try_new(cc: &CreationContext<'_>) -> Result<Self, AppError> {
-        let app = M::new(cc)?;
-        Ok(Self::new_with_app(app))
-    }
-
-    /// helper to create a new app
-    pub fn new_with_app(app: M) -> Self {
-        let settings_list = app.settings_list();
-        Self {
+    fn try_new_with_args(cc: &CreationContext<'_>, vec_args: &[String]) -> Result<Self, AppError> {
+        let saved_state = if let Some(saved) = Self::get_saved_app_state(cc) {
+            log::debug!("Using saved state");
+            (saved.app, Some(saved.internal))
+        } else {
+            (M::default(), None)
+        };
+        let app = M::try_new_with_args(saved_state.0, cc, vec_args)?;
+        let panel_list = app.panel_list();
+        let bladvak_internal = if let Some(saved_state) = saved_state.1 {
+            saved_state
+        } else {
+            let mut panel_state = BTreeMap::new();
+            for one_panel in &panel_list {
+                panel_state.insert(one_panel.name(&app).to_string(), PanelState::default());
+            }
+            BladvakSavedState {
+                settings: Default::default(),
+                panel_state,
+            }
+        };
+        Ok(Self {
             app,
-            settings: Default::default(),
+            internal: bladvak_internal,
             error_manager: Default::default(),
             file_handler: Default::default(),
-            settings_list,
-        }
+            panel_list,
+        })
     }
 
     /// Show the central panel
@@ -136,6 +178,24 @@ where
             )
             .show(ctx, |ui| {
                 self.app.central_panel(ui, &mut self.error_manager);
+                for one_panel in &self.panel_list {
+                    if one_panel.has_ui(&self.app)
+                        && let Some(panel_state) =
+                            self.internal.panel_state.get_mut(one_panel.name(&self.app))
+                        && let PanelOpen::AsWindows = panel_state.open
+                    {
+                        let mut open = true;
+                        egui::Window::new("Image info").open(&mut open).show(
+                            ui.ctx(),
+                            |window_ui| {
+                                one_panel.ui(&mut self.app, window_ui, &mut self.error_manager);
+                            },
+                        );
+                        if !open {
+                            panel_state.open = PanelOpen::AsSideBar;
+                        }
+                    }
+                }
             });
     }
 
@@ -151,27 +211,8 @@ where
                         ui.close();
                         self.file_handler.handle_file_open();
                     }
-                    ui.menu_button("Theme", |ui| {
-                        let mut theme_preference = ui.ctx().options(|opt| opt.theme_preference);
-                        ui.selectable_value(
-                            &mut theme_preference,
-                            ThemePreference::Light,
-                            "☀ Light",
-                        );
-                        ui.selectable_value(
-                            &mut theme_preference,
-                            ThemePreference::Dark,
-                            "🌙 Dark",
-                        );
-                        ui.selectable_value(
-                            &mut theme_preference,
-                            ThemePreference::System,
-                            "💻 System",
-                        );
-                        ui.ctx().set_theme(theme_preference);
-                    });
                     if ui.button("Settings").clicked() {
-                        self.settings.open = true;
+                        self.internal.settings.open = true;
                     }
                     let is_web = cfg!(target_arch = "wasm32");
                     if !is_web && ui.button("Quit").clicked() {
@@ -186,18 +227,32 @@ where
 
     /// Show the side panel
     pub fn side_panel(&mut self, ctx: &egui::Context) {
-        if self.app.is_side_panel() {
+        let is_panels_in_sidebar = self
+            .internal
+            .panel_state
+            .iter()
+            .any(|e| e.1.open == PanelOpen::AsSideBar);
+        if self.app.is_side_panel() && is_panels_in_sidebar {
             egui::SidePanel::right("my_panel")
                 .frame(
                     egui::Frame::central_panel(&ctx.style())
                         .inner_margin(0)
                         .outer_margin(0),
                 )
-                .min_width(self.settings.min_width_sidebar)
+                .min_width(self.internal.settings.min_width_sidebar)
                 .show(ctx, |side_panel_ui| {
-                    self.app.side_panel(side_panel_ui, &mut self.error_manager);
+                    for one_panel in &self.panel_list {
+                        if one_panel.has_ui(&self.app)
+                            && let Some(panel_state) =
+                                self.internal.panel_state.get(one_panel.name(&self.app))
+                            && let PanelOpen::AsSideBar = panel_state.open
+                        {
+                            one_panel.ui(&mut self.app, side_panel_ui, &mut self.error_manager);
+                        }
+                    }
+                    // self.app.side_panel(side_panel_ui, &mut self.error_manager);
                     side_panel_ui.with_layout(
-                        egui::Layout::top_down(egui::Align::RIGHT),
+                        egui::Layout::bottom_up(egui::Align::RIGHT),
                         |ui: &mut egui::Ui| {
                             egui::warn_if_debug_build(ui);
                         },
@@ -238,13 +293,7 @@ where
         eframe::run_native(
             &M::name(),
             native_options,
-            Box::new(|cc| {
-                if args.is_empty() {
-                    Ok(Box::new(Bladvak::<M>::try_new(cc)?))
-                } else {
-                    Ok(Box::new(Bladvak::<M>::try_new_with_args(cc, &args)?))
-                }
-            }),
+            Box::new(|cc| Ok(Box::new(Bladvak::<M>::try_new_with_args(cc, &args)?))),
         )
     }
 
@@ -274,11 +323,16 @@ where
                 .start(
                     canvas,
                     web_options,
-                    Box::new(|cc| match Bladvak::<M>::try_new(cc) {
-                        Ok(app) => Ok(Box::new(app)),
-                        Err(e) => {
-                            log::error!("Failed to create app: {e}");
-                            return Err(format!("Failed to create app: {e}").into());
+                    Box::new(|cc| {
+                        match Bladvak::<M>::try_new_with_args(
+                            cc,
+                            &["sqfd".to_string(), "sqfd".to_string()],
+                        ) {
+                            Ok(app) => Ok(Box::new(app)),
+                            Err(e) => {
+                                log::error!("Failed to create app: {e}");
+                                return Err(format!("Failed to create app: {e}").into());
+                            }
                         }
                     }),
                 )
@@ -300,11 +354,23 @@ where
             }
         });
     }
+
+    /// Load previous app state (if any)
+    // eframe: Note that you must enable the `persistence` feature for this to work.
+    pub fn get_saved_app_state(cc: &eframe::CreationContext<'_>) -> Option<Bladvak<M>> {
+        if let Some(storage) = cc.storage
+            && let Some(saved_app_state) = eframe::get_value::<Bladvak<M>>(storage, eframe::APP_KEY)
+        {
+            log::info!("Loading saved app state");
+            return Some(saved_app_state);
+        }
+        None
+    }
 }
 
 impl<M> eframe::App for Bladvak<M>
 where
-    M: for<'a> BladvakApp<'a> + Debug + Serialize + for<'a> Deserialize<'a> + 'static,
+    M: for<'a> BladvakApp<'a> + Debug + Default + Serialize + for<'a> Deserialize<'a> + 'static,
 {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
@@ -315,7 +381,7 @@ where
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         self.top_panel(ctx);
 
-        if self.settings.right_panel {
+        if self.internal.settings.right_panel {
             self.side_panel(ctx);
         }
 

@@ -1,7 +1,7 @@
 //! utility functions
 use std::path::PathBuf;
 
-use crate::{AppError, Bladvak, BladvakApp};
+use crate::AppError;
 
 pub mod grid;
 
@@ -93,17 +93,14 @@ pub fn get_save_path(current_path: Option<PathBuf>) -> Result<Option<PathBuf>, A
     }
 }
 
-/// Load previous app state (if any).
-// eframe: Note that you must enable the `persistence` feature for this to work.
-pub fn get_saved_app_state<M: for<'a> BladvakApp<'a> + serde::de::DeserializeOwned + Default>(
-    cc: &eframe::CreationContext<'_>,
-) -> M {
-    if let Some(storage) = cc.storage
-        && let Some(saved_app_state) = eframe::get_value::<Bladvak<M>>(storage, eframe::APP_KEY)
-    {
-        log::info!("Loading saved app state");
-        return saved_app_state.app;
-    }
-    log::info!("Loading default app state");
-    M::default()
+/// Is running on web
+#[inline(always)]
+pub const fn is_web() -> bool {
+    cfg!(target_arch = "wasm32")
+}
+
+/// Is running on native
+#[inline(always)]
+pub const fn is_native() -> bool {
+    !is_web()
 }
