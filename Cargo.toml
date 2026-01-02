@@ -1,6 +1,6 @@
 [package]
 name = "bladvak"
-version = "1.2.2"
+version = "1.2.3"
 edition = "2024"
 description = "Base egui/eframe app - bladvak means 'pickaxe' in Gobbledegook"
 license = "MIT"
@@ -26,7 +26,7 @@ eframe = { version = "0.33", default-features = false, features = [
 ] }
 log = "0.4"
 serde = { version = "1", features = ["derive"] }
-serde_json = "1.0.147"
+serde_json = "1.0.148"
 egui_extras = { version = "0.33", features = [
     "all_loaders",
     "serde",

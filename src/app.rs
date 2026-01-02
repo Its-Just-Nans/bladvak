@@ -36,9 +36,9 @@ pub trait BladvakApp<'a>: Sized {
     /// icon
     fn icon() -> &'a [u8];
 
-    /// should display a side_panel
+    /// should display a side panel
     fn is_open_button(&self) -> bool;
-    /// should display a side_panel
+    /// should display a side panel
     fn is_side_panel(&self) -> bool;
 
     /// Builder func for native
@@ -125,11 +125,11 @@ pub struct Bladvak<App> {
     pub(crate) panel_list: Vec<Box<dyn BladvakPanel<App = App>>>,
 }
 
-/// Return type for bladvak_main
+/// Return type for [`Bladvak::bladvak_main`]
 #[cfg(not(target_arch = "wasm32"))]
 pub type MainResult = eframe::Result;
 
-/// Return type for bladvak_main - wasm
+/// Return type for [`Bladvak::bladvak_main`] - wasm
 #[cfg(target_arch = "wasm32")]
 pub type MainResult = ();
 
@@ -161,15 +161,15 @@ where
                 panel_state.insert(one_panel.name().to_string(), PanelState::default());
             }
             BladvakSavedState {
-                settings: Default::default(),
+                settings: Settings::default(),
                 panel_state,
             }
         };
         Ok(Self {
             app,
             internal: bladvak_internal,
-            error_manager: Default::default(),
-            file_handler: Default::default(),
+            error_manager: ErrorManager::default(),
+            file_handler: FileHandler::default(),
             panel_list,
         })
     }
@@ -370,6 +370,7 @@ where
 
     /// Load previous app state (if any)
     // eframe: Note that you must enable the `persistence` feature for this to work.
+    #[must_use]
     pub fn get_saved_app_state(cc: &eframe::CreationContext<'_>) -> Option<Bladvak<M>> {
         if let Some(storage) = cc.storage
             && let Some(saved_app_state) = eframe::get_value::<Bladvak<M>>(storage, eframe::APP_KEY)
@@ -414,7 +415,7 @@ where
             Err(err) => {
                 self.error_manager.add_error(err);
             }
-        };
+        }
 
         self.show_error_manager(ctx);
         self.show_setting(ctx, frame);

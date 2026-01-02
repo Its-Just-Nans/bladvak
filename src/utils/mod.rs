@@ -65,7 +65,7 @@ pub fn save_file(data: &[u8], path_file: &PathBuf) -> Result<(), String> {
 /// # Errors
 /// Failed if the input is wrong
 #[cfg(not(target_arch = "wasm32"))]
-pub fn get_save_path(current_path: Option<PathBuf>) -> Result<Option<PathBuf>, AppError> {
+pub fn get_save_path(current_path: &Option<PathBuf>) -> Result<Option<PathBuf>, AppError> {
     use rfd::FileDialog;
     let path = FileDialog::new()
         .set_directory(match &current_path {
@@ -94,13 +94,15 @@ pub fn get_save_path(current_path: Option<PathBuf>) -> Result<Option<PathBuf>, A
 }
 
 /// Is running on web
-#[inline(always)]
+#[inline]
+#[must_use]
 pub const fn is_web() -> bool {
     cfg!(target_arch = "wasm32")
 }
 
 /// Is running on native
-#[inline(always)]
+#[inline]
+#[must_use]
 pub const fn is_native() -> bool {
     !is_web()
 }

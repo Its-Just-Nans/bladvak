@@ -9,7 +9,8 @@
     clippy::missing_panics_doc,
     clippy::cargo,
     clippy::unwrap_used,
-    clippy::expect_used
+    clippy::expect_used,
+    clippy::pedantic
 )]
 #![warn(clippy::multiple_crate_versions)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release

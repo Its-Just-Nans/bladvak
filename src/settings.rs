@@ -3,7 +3,10 @@
 use eframe::egui::{self, Context, Id, Modal, ThemePreference};
 use serde::{Deserialize, Serialize};
 
-use crate::app::{Bladvak, BladvakApp, PanelOpen};
+use crate::{
+    ErrorManager,
+    app::{Bladvak, BladvakApp, PanelOpen},
+};
 
 /// Selected Setting
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize, PartialEq)]
@@ -73,6 +76,99 @@ where
         self.error_manager.was_open = self.error_manager.is_open;
     }
 
+    /// show setting popup
+    fn show_settings_modal(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+        let value = self.internal.settings.selected_setting.clone();
+        egui::TopBottomPanel::bottom("bottom_settings").show_inside(ui, |ui| {
+            egui::Sides::new().spacing(20.0).show(
+                ui,
+                |modal_ui_left| {
+                    modal_ui_left.horizontal_wrapped(|ui| {
+                        ui.spacing_mut().item_spacing.x = 0.0;
+                        ui.label(format!("{}@{}", M::name(), M::version()));
+                    });
+                },
+                |modal_ui_right| {
+                    if modal_ui_right.button("Close").clicked() {
+                        modal_ui_right.close();
+                    }
+                },
+            );
+        });
+        egui::SidePanel::left("left_panel_setting")
+            .resizable(true)
+            .frame(
+                egui::Frame::central_panel(&ui.ctx().style())
+                    .inner_margin(0)
+                    .outer_margin(5.0),
+            )
+            .show_inside(ui, |ui| {
+                ui.vertical_centered(|ui| {
+                    ui.heading("Settings");
+                });
+                ui.separator();
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
+                        ui.selectable_value(
+                            &mut self.internal.settings.selected_setting,
+                            SelectedSetting::General,
+                            "General",
+                        );
+                        ui.selectable_value(
+                            &mut self.internal.settings.selected_setting,
+                            SelectedSetting::Panel,
+                            "Panels",
+                        );
+
+                        for one_panel in &self.panel_list {
+                            if one_panel.has_settings() {
+                                let one_setting_name = one_panel.name();
+                                ui.selectable_value(
+                                    &mut self.internal.settings.selected_setting,
+                                    SelectedSetting::String(one_setting_name.to_string()),
+                                    one_setting_name,
+                                );
+                            }
+                        }
+                        #[cfg(debug_assertions)]
+                        ui.selectable_value(
+                            &mut self.internal.settings.selected_setting,
+                            SelectedSetting::Debug,
+                            "Debug",
+                        );
+                    });
+                });
+            });
+
+        egui::CentralPanel::default().show_inside(ui, |ui| {
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                ui.set_min_width(ui.available_width());
+                match value {
+                    SelectedSetting::General => {
+                        self.show_general_setting(ui, frame);
+                    }
+                    SelectedSetting::Panel => {
+                        self.show_panel_setting(ui);
+                    }
+                    SelectedSetting::String(value) => {
+                        for one_panel in &self.panel_list {
+                            let panel_name = one_panel.name();
+                            if panel_name == value {
+                                ui.heading(format!("{panel_name} settings"));
+                                ui.separator();
+                                one_panel.ui_settings(&mut self.app, ui, &mut self.error_manager);
+                            }
+                        }
+                    }
+                    #[cfg(debug_assertions)]
+                    SelectedSetting::Debug => {
+                        self.show_debug_setting(ui);
+                    }
+                }
+            });
+        });
+    }
+
     /// Show settings Ui
     pub fn show_setting(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
         egui::Window::new("Inspection")
@@ -83,104 +179,7 @@ where
             });
         if self.internal.settings.open {
             let modal = Modal::new(Id::new("Modal settings")).show(ctx, |ui| {
-                let value = self.internal.settings.selected_setting.clone();
-                egui::TopBottomPanel::bottom("bottom_settings").show_inside(ui, |ui| {
-                    egui::Sides::new().spacing(20.0).show(
-                        ui,
-                        |modal_ui_left| {
-                            modal_ui_left.horizontal_wrapped(|ui| {
-                                ui.spacing_mut().item_spacing.x = 0.0;
-                                ui.label(format!("{}@{}", M::name(), M::version()));
-                            });
-                        },
-                        |modal_ui_right| {
-                            if modal_ui_right.button("Close").clicked() {
-                                modal_ui_right.close();
-                            }
-                        },
-                    );
-                });
-                egui::SidePanel::left("left_panel_setting")
-                    .resizable(true)
-                    .frame(
-                        egui::Frame::central_panel(&ctx.style())
-                            .inner_margin(0)
-                            .outer_margin(5.0),
-                    )
-                    .show_inside(ui, |ui| {
-                        ui.vertical_centered(|ui| {
-                            ui.heading("Settings");
-                        });
-                        ui.separator();
-                        egui::ScrollArea::vertical().show(ui, |ui| {
-                            ui.with_layout(
-                                egui::Layout::top_down_justified(egui::Align::LEFT),
-                                |ui| {
-                                    ui.selectable_value(
-                                        &mut self.internal.settings.selected_setting,
-                                        SelectedSetting::General,
-                                        "General",
-                                    );
-                                    ui.selectable_value(
-                                        &mut self.internal.settings.selected_setting,
-                                        SelectedSetting::Panel,
-                                        "Panels",
-                                    );
-
-                                    for one_panel in &self.panel_list {
-                                        if one_panel.has_settings() {
-                                            let one_setting_name = one_panel.name();
-                                            ui.selectable_value(
-                                                &mut self.internal.settings.selected_setting,
-                                                SelectedSetting::String(
-                                                    one_setting_name.to_string(),
-                                                ),
-                                                one_setting_name,
-                                            );
-                                        }
-                                    }
-                                    #[cfg(debug_assertions)]
-                                    ui.selectable_value(
-                                        &mut self.internal.settings.selected_setting,
-                                        SelectedSetting::Debug,
-                                        "Debug",
-                                    );
-                                },
-                            );
-                        });
-                    });
-
-                egui::CentralPanel::default().show_inside(ui, |ui| {
-                    egui::ScrollArea::vertical().show(ui, |ui| {
-                        ui.set_min_width(ui.available_width());
-                        match value {
-                            SelectedSetting::General => {
-                                self.show_general_setting(ui, frame);
-                            }
-                            SelectedSetting::Panel => {
-                                self.show_panel_setting(ui);
-                            }
-                            SelectedSetting::String(value) => {
-                                for one_panel in &self.panel_list {
-                                    let panel_name = one_panel.name();
-                                    if panel_name == value {
-                                        ui.heading(format!("{} settings", panel_name));
-                                        ui.separator();
-                                        one_panel.ui_settings(
-                                            &mut self.app,
-                                            ui,
-                                            &mut self.error_manager,
-                                        );
-                                    }
-                                }
-                            }
-                            #[cfg(debug_assertions)]
-                            SelectedSetting::Debug => {
-                                self.show_debug_setting(ui);
-                            }
-                        }
-                    });
-                });
+                self.show_settings_modal(ui, frame);
             });
             if modal.should_close() {
                 self.internal.settings.open = false;
@@ -202,7 +201,7 @@ where
                             ui.selectable_value(&mut state.open, PanelOpen::AsSideBar, "Sidebar");
                         } else if state.open == PanelOpen::AsSideBar {
                             // set the default to None (hidden)
-                            state.open = PanelOpen::None
+                            state.open = PanelOpen::None;
                         }
                         ui.selectable_value(&mut state.open, PanelOpen::AsWindows, "Windows");
                         ui.selectable_value(&mut state.open, PanelOpen::None, "None");
@@ -228,7 +227,7 @@ where
         ui.horizontal(|ui| {
             ui.label(format!("Reset {}", self.error_manager.title()));
             ui.button("⟳").clicked().then(|| {
-                self.error_manager = Default::default();
+                self.error_manager = ErrorManager::default();
             });
         });
         ui.checkbox(&mut self.error_manager.is_open, "Show Error panel");

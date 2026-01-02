@@ -18,7 +18,7 @@ pub struct File {
 /// File Handler
 #[derive(Default, serde::Deserialize, serde::Serialize)]
 pub struct FileHandler {
-    /// Dropped_files handler
+    /// Dropped files handler
     #[serde(skip)]
     pub dropped_files: Vec<egui::DroppedFile>,
 
@@ -45,7 +45,7 @@ impl Debug for FileHandler {
         let mut debug_fmt = f.debug_struct("FileHandler");
         debug_fmt.field("dropped_files", &self.dropped_files);
         if self.file_upload.is_some() {
-            let val = "".to_string();
+            let val = String::new();
             debug_fmt.field("file_upload", &val);
         }
         debug_fmt.finish()
@@ -91,16 +91,15 @@ impl FileHandler {
                         data: buf,
                         path: path_buf,
                     }));
-                } else {
-                    return Err(AppError::new("Invalid file path".to_string()));
                 }
+                return Err(AppError::new("Invalid file path".to_string()));
             }
             // no file selected
             Ok(FileState::NotSelected)
-        }))
+        }));
     }
 
-    /// Reset the file_handler
+    /// Reset the `file_handler`
     pub fn reset(&mut self) {
         self.file_upload = None;
     }

@@ -36,6 +36,7 @@ impl Default for Grid {
 
 impl Grid {
     /// Tittle
+    #[must_use]
     pub fn title(&self) -> &'static str {
         "Grid"
     }

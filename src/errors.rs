@@ -2,7 +2,7 @@
 
 use std::{error::Error, fmt, io, string::FromUtf8Error, sync::Arc};
 
-/// AppError object
+/// `AppError` object
 #[derive(Default, Debug, Clone)]
 pub struct AppError {
     /// Error message
@@ -23,7 +23,8 @@ impl fmt::Display for AppError {
 }
 
 impl AppError {
-    /// Create new AppError
+    /// Create new `AppError`
+    #[must_use]
     pub fn new(message: String) -> Self {
         Self {
             message,
@@ -119,6 +120,7 @@ pub struct ErrorManager {
 
 impl ErrorManager {
     /// New Error manager
+    #[must_use]
     pub fn new() -> Self {
         Self {
             ..Default::default()
@@ -131,6 +133,7 @@ impl ErrorManager {
     }
 
     /// Errors Title
+    #[must_use]
     pub fn title(&self) -> &'static str {
         "Error window"
     }
