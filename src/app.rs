@@ -141,20 +141,52 @@ where
     /// # Errors
     /// Can return an error if fails to create new app
     fn try_new_with_args(cc: &CreationContext<'_>, vec_args: &[String]) -> Result<Self, AppError> {
-        let saved_state = if let Some(saved) = Self::get_saved_app_state(cc) {
+        let (saved_state_app, saved_internal) = if let Some(saved) = Self::get_saved_app_state(cc) {
             log::info!("Using saved state");
             (saved.app, Some(saved.internal))
         } else {
             (M::default(), None)
         };
-        let app = M::try_new_with_args(saved_state.0, cc, vec_args)?;
+        let app = M::try_new_with_args(saved_state_app, cc, vec_args)?;
         let panel_list = app.panel_list();
-        let bladvak_internal = if let Some(saved_state) = saved_state.1
-            && saved_state.panel_state.len() == panel_list.len()
-        {
-            // maybe add a check on the key of the panel_list
-            log::info!("Using saved panels state");
-            saved_state
+        let bladvak_internal = if let Some(saved_state) = saved_internal {
+            let hashet_saved = saved_state
+                .panel_state
+                .iter()
+                .map(|p| p.0.as_str())
+                .collect::<std::collections::HashSet<_>>();
+            let hashet_current = panel_list
+                .iter()
+                .map(|p| p.name())
+                .collect::<std::collections::HashSet<_>>();
+            if hashet_saved == hashet_current {
+                // maybe add a check on the key of the panel_list
+                log::info!("Using saved panels state");
+                saved_state
+            } else {
+                // new state with old panel
+                let BladvakSavedState {
+                    settings: old_settings,
+                    panel_state: old_panel_state,
+                } = saved_state;
+                log::info!("Trying to use old saved panels state");
+                let mut new_panel_state = BTreeMap::new();
+                for one_panel in &panel_list {
+                    let is_panel_present = old_panel_state
+                        .iter()
+                        .find(|panel| panel.0 == one_panel.name());
+                    if let Some(saved_panel_state) = is_panel_present {
+                        new_panel_state
+                            .insert(one_panel.name().to_string(), saved_panel_state.1.clone());
+                    } else {
+                        new_panel_state.insert(one_panel.name().to_string(), PanelState::default());
+                    }
+                }
+                BladvakSavedState {
+                    settings: old_settings,
+                    panel_state: new_panel_state,
+                }
+            }
         } else {
             let mut panel_state = BTreeMap::new();
             for one_panel in &panel_list {
