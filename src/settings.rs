@@ -1,6 +1,6 @@
 //! Settings component
 
-use eframe::egui::{self, Context, Id, Modal, ThemePreference};
+use eframe::egui::{self, Context, Frame, Id, Margin, Modal, ThemePreference};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -79,22 +79,33 @@ where
     /// show setting popup
     fn show_settings_modal(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         let value = self.internal.settings.selected_setting.clone();
-        egui::TopBottomPanel::bottom("bottom_settings").show_inside(ui, |ui| {
-            egui::Sides::new().spacing(20.0).show(
-                ui,
-                |modal_ui_left| {
-                    modal_ui_left.horizontal_wrapped(|ui| {
-                        ui.spacing_mut().item_spacing.x = 0.0;
-                        ui.label(format!("{}@{}", M::name(), M::version()));
-                    });
-                },
-                |modal_ui_right| {
-                    if modal_ui_right.button("Close").clicked() {
-                        modal_ui_right.close();
-                    }
-                },
-            );
-        });
+        egui::TopBottomPanel::bottom("bottom_settings")
+            .frame(
+                Frame::new()
+                    .inner_margin(Margin {
+                        left: 2,
+                        right: 2,
+                        top: 8,
+                        bottom: 2,
+                    })
+                    .fill(ui.style().visuals.panel_fill),
+            )
+            .show_inside(ui, |ui| {
+                egui::Sides::new().show(
+                    ui,
+                    |modal_ui_left| {
+                        modal_ui_left.horizontal_wrapped(|ui| {
+                            ui.spacing_mut().item_spacing.x = 0.0;
+                            ui.label(format!("{}@{}", M::name(), M::version()));
+                        });
+                    },
+                    |modal_ui_right| {
+                        if modal_ui_right.button("Close").clicked() {
+                            modal_ui_right.close();
+                        }
+                    },
+                );
+            });
         egui::SidePanel::left("left_panel_setting")
             .resizable(true)
             .frame(

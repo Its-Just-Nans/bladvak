@@ -496,10 +496,11 @@ dependencies = [
 
 [[package]]
 name = "bladvak"
-version = "1.2.4"
+version = "1.2.5"
 dependencies = [
  "eframe",
  "egui_extras",
+ "egui_plot",
  "env_logger",
  "js-sys",
  "log",
@@ -1016,6 +1017,17 @@ dependencies = [
  "wasm-bindgen",
  "web-sys",
  "winit",
+]
+
+[[package]]
+name = "egui_plot"
+version = "0.34.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33233ffc010fd450381805bbbebecbbb82f077de7712ddc439f0b20effd42db7"
+dependencies = [
+ "ahash",
+ "egui",
+ "emath",
 ]
 
 [[package]]
