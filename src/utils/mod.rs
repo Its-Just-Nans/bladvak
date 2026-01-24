@@ -1,4 +1,6 @@
 //! utility functions
+
+use std::path::Path;
 use std::path::PathBuf;
 
 use crate::AppError;
@@ -9,7 +11,7 @@ pub mod grid;
 /// # Errors
 /// Error if fails to save the file
 #[cfg(not(target_arch = "wasm32"))]
-pub fn save_file(data: &[u8], path_file: &PathBuf) -> Result<(), String> {
+pub fn save_file(data: &[u8], path_file: &Path) -> Result<(), String> {
     use std::fs::File;
     use std::io::prelude::*;
 
@@ -22,7 +24,7 @@ pub fn save_file(data: &[u8], path_file: &PathBuf) -> Result<(), String> {
 /// # Errors
 /// Error if fails to save the file
 #[cfg(target_arch = "wasm32")]
-pub fn save_file(data: &[u8], path_file: &PathBuf) -> Result<(), String> {
+pub fn save_file(data: &[u8], path_file: &Path) -> Result<(), String> {
     // create blob
     use eframe::wasm_bindgen::JsCast;
     use js_sys::Array;
@@ -65,7 +67,7 @@ pub fn save_file(data: &[u8], path_file: &PathBuf) -> Result<(), String> {
 /// # Errors
 /// Failed if the input is wrong
 #[cfg(not(target_arch = "wasm32"))]
-pub fn get_save_path(current_path: &Option<PathBuf>) -> Result<Option<PathBuf>, AppError> {
+pub fn get_save_path(current_path: Option<&Path>) -> Result<Option<PathBuf>, AppError> {
     use rfd::FileDialog;
     let path = FileDialog::new()
         .set_directory(match &current_path {
@@ -86,9 +88,9 @@ pub fn get_save_path(current_path: &Option<PathBuf>) -> Result<Option<PathBuf>, 
 /// # Errors
 /// No error in wasm
 #[cfg(target_arch = "wasm32")]
-pub fn get_save_path(current_path: Option<PathBuf>) -> Result<Option<PathBuf>, AppError> {
+pub fn get_save_path(current_path: Option<&Path>) -> Result<Option<PathBuf>, AppError> {
     match current_path {
-        Some(p) => Ok(Some(p)),
+        Some(p) => Ok(Some(p.to_path_buf())),
         None => Ok(Some(PathBuf::from("file"))),
     }
 }

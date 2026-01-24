@@ -125,11 +125,13 @@ where
                             SelectedSetting::General,
                             "General",
                         );
-                        ui.selectable_value(
-                            &mut self.internal.settings.selected_setting,
-                            SelectedSetting::Panel,
-                            "Panels",
-                        );
+                        if !self.app.panel_options_as_menu() {
+                            ui.selectable_value(
+                                &mut self.internal.settings.selected_setting,
+                                SelectedSetting::Panel,
+                                "Panels",
+                            );
+                        }
 
                         for one_panel in &self.panel_list {
                             if one_panel.has_settings() {

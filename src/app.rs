@@ -2,7 +2,10 @@
 
 use eframe::{CreationContext, egui};
 use serde::{Deserialize, Serialize};
-use std::{collections::BTreeMap, fmt::Debug};
+use std::{
+    collections::BTreeMap,
+    fmt::{Debug, Display},
+};
 
 use crate::{
     errors::{AppError, ErrorManager},
@@ -39,7 +42,13 @@ pub trait BladvakApp<'a>: Sized {
     /// should display a side panel
     fn is_open_button(&self) -> bool;
     /// should display a side panel
-    fn is_side_panel(&self) -> bool;
+    fn is_side_panel(&self) -> bool {
+        true
+    }
+    /// panels options
+    fn panel_options_as_menu(&self) -> bool {
+        true
+    }
 
     /// Builder func for native
     ///
@@ -85,6 +94,16 @@ pub enum PanelOpen {
     AsSideBar,
     /// Hidden state
     None,
+}
+
+impl Display for PanelOpen {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AsSideBar => write!(f, "Sidebar"),
+            Self::AsWindows => write!(f, "Windows"),
+            Self::None => write!(f, "None"),
+        }
+    }
 }
 
 /// Panel state
@@ -246,6 +265,31 @@ where
                     if self.app.is_open_button() && ui.button("Open").clicked() {
                         ui.close();
                         self.file_handler.handle_file_open();
+                    }
+                    if self.app.panel_options_as_menu() {
+                        ui.menu_button("Panels", |ui| {
+                            for one_panel in &mut self.internal.panel_state {
+                                ui.menu_button(one_panel.0, |ui| {
+                                    let value = &mut one_panel.1.open;
+                                    ui.selectable_value(
+                                        value,
+                                        PanelOpen::AsSideBar,
+                                        PanelOpen::AsSideBar.to_string(),
+                                    );
+                                    ui.selectable_value(
+                                        value,
+                                        PanelOpen::AsWindows,
+                                        PanelOpen::AsWindows.to_string(),
+                                    );
+                                    ui.selectable_value(
+                                        value,
+                                        PanelOpen::None,
+                                        PanelOpen::None.to_string(),
+                                    );
+                                    ui.should_close()
+                                });
+                            }
+                        });
                     }
                     if ui.button("Settings").clicked() {
                         self.internal.settings.open = true;
