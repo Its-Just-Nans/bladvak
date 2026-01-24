@@ -1,6 +1,6 @@
 //! Settings component
 
-use eframe::egui::{self, Context, Frame, Id, Margin, Modal, ThemePreference};
+use eframe::egui::{self, Checkbox, Context, Frame, Id, Margin, Modal, RichText, ThemePreference};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -49,10 +49,6 @@ impl Default for Settings {
     }
 }
 
-/// Empty struct to reset storage
-#[derive(serde::Serialize)]
-struct ResetStorage;
-
 impl<M> Bladvak<M>
 where
     M: for<'a> BladvakApp<'a> + Serialize + for<'a> Deserialize<'a> + 'static,
@@ -77,7 +73,7 @@ where
     }
 
     /// show setting popup
-    fn show_settings_modal(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+    fn show_settings_modal(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let value = self.internal.settings.selected_setting.clone();
         egui::TopBottomPanel::bottom("bottom_settings")
             .frame(
@@ -158,7 +154,7 @@ where
                 ui.set_min_width(ui.available_width());
                 match value {
                     SelectedSetting::General => {
-                        self.show_general_setting(ui, frame);
+                        self.show_general_setting(ui);
                     }
                     SelectedSetting::Panel => {
                         self.show_panel_setting(ui);
@@ -225,17 +221,17 @@ where
     }
 
     /// Show setting of selected
-    pub(crate) fn show_general_setting(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+    pub(crate) fn show_general_setting(&mut self, ui: &mut egui::Ui) {
         ui.heading(format!("{} settings", M::name()));
         ui.separator();
         ui.horizontal(|ui| {
             ui.label(format!("Clean storage of {}", M::name()));
-            ui.button("⟳").clicked().then(|| {
-                if let Some(storage) = frame.storage_mut() {
-                    eframe::set_value(storage, eframe::APP_KEY, &ResetStorage);
-                    log::info!("Storage cleaned");
-                }
-            });
+            ui.add(Checkbox::without_text(&mut self.ignore_saved_state));
+            if self.ignore_saved_state {
+                ui.label(
+                    RichText::new("⚠ You should restart app ⚠").color(ui.visuals().warn_fg_color),
+                );
+            }
         });
         ui.horizontal(|ui| {
             ui.label(format!("Reset {}", self.error_manager.title()));

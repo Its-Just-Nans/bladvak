@@ -131,6 +131,9 @@ pub struct Bladvak<App> {
     /// Bladvak internal saved state
     pub(crate) internal: BladvakSavedState,
 
+    /// Should reset storage (ignore saved state on start)
+    pub(crate) ignore_saved_state: bool,
+
     /// error manager/handler
     #[serde(skip)]
     pub(crate) error_manager: ErrorManager,
@@ -161,8 +164,13 @@ where
     /// Can return an error if fails to create new app
     fn try_new_with_args(cc: &CreationContext<'_>, vec_args: &[String]) -> Result<Self, AppError> {
         let (saved_state_app, saved_internal) = if let Some(saved) = Self::get_saved_app_state(cc) {
-            log::info!("Using saved state");
-            (saved.app, Some(saved.internal))
+            if saved.ignore_saved_state {
+                log::info!("Explicitly ignoring saved state");
+                (M::default(), None)
+            } else {
+                log::info!("Using saved state");
+                (saved.app, Some(saved.internal))
+            }
         } else {
             (M::default(), None)
         };
@@ -219,6 +227,7 @@ where
         Ok(Self {
             app,
             internal: bladvak_internal,
+            ignore_saved_state: false,
             error_manager: ErrorManager::default(),
             file_handler: FileHandler::default(),
             panel_list,
