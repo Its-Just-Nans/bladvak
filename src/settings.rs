@@ -289,14 +289,14 @@ where
         ui.heading("Debug");
 
         ui.label("App state");
-        if let Ok(serialized) = serde_json::to_string(&self.app) {
+        if let Ok(serialized) = serde_json::to_string_pretty(&self.app) {
             let mut mut_serial = serialized;
             ui.text_edit_multiline(&mut mut_serial);
         } else {
             ui.label("Failed to serialize");
         }
-        ui.label("Internal state");
-        if let Ok(serialized) = serde_json::to_string(&self.internal) {
+        ui.label("Internal state (bladvak)");
+        if let Ok(serialized) = serde_json::to_string_pretty(&self.internal) {
             let mut mut_serial = serialized;
             ui.text_edit_multiline(&mut mut_serial);
         } else {

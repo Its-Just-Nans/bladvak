@@ -18,7 +18,9 @@ pub trait BladvakApp<'a>: Sized {
     /// Top panel ui
     fn top_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager);
     /// Setting panel ui
-    fn panel_list(&self) -> Vec<Box<dyn BladvakPanel<App = Self>>>;
+    fn panel_list(&self) -> Vec<Box<dyn BladvakPanel<App = Self>>> {
+        vec![]
+    }
     /// Central panel ui
     fn central_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager);
     /// Side panel panel ui
@@ -37,7 +39,10 @@ pub trait BladvakApp<'a>: Sized {
     /// repo URL
     fn repo_url() -> String;
     /// icon
-    fn icon() -> &'a [u8];
+    #[must_use]
+    fn icon() -> &'a [u8] {
+        &[]
+    }
 
     /// should display a side panel
     fn is_open_button(&self) -> bool;
@@ -87,10 +92,10 @@ pub trait BladvakPanel: Debug {
 /// Panel open state
 #[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum PanelOpen {
-    #[default]
     /// In a window
     AsWindows,
     /// In sidebar
+    #[default]
     AsSideBar,
     /// Hidden state
     None,
@@ -275,7 +280,7 @@ where
                         ui.close();
                         self.file_handler.handle_file_open();
                     }
-                    if self.app.panel_options_as_menu() {
+                    if self.app.panel_options_as_menu() && !self.internal.panel_state.is_empty() {
                         ui.menu_button("Panels", |ui| {
                             for one_panel in &mut self.internal.panel_state {
                                 ui.menu_button(one_panel.0, |ui| {
@@ -370,20 +375,27 @@ where
 
         env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
 
-        let ico = match eframe::icon_data::from_png_bytes(M::icon()) {
-            Ok(ico) => ico,
-            Err(e) => {
-                return Err(eframe::Error::AppCreation(
-                    format!("Error loading the ico: {e}").into(),
-                ));
-            }
+        let viewport = egui::ViewportBuilder::default()
+            .with_drag_and_drop(true)
+            .with_inner_size([400.0, 300.0])
+            .with_min_inner_size([300.0, 220.0]);
+
+        let icon_data = M::icon();
+        let viewport = if icon_data.is_empty() {
+            viewport
+        } else {
+            let ico = match eframe::icon_data::from_png_bytes(icon_data) {
+                Ok(ico) => ico,
+                Err(e) => {
+                    return Err(eframe::Error::AppCreation(
+                        format!("Error loading the ico: {e}").into(),
+                    ));
+                }
+            };
+            viewport.with_icon(ico)
         };
         let native_options = eframe::NativeOptions {
-            viewport: egui::ViewportBuilder::default()
-                .with_drag_and_drop(true)
-                .with_inner_size([400.0, 300.0])
-                .with_min_inner_size([300.0, 220.0])
-                .with_icon(ico),
+            viewport,
             ..Default::default()
         };
         let args: Vec<String> = env::args().collect();
