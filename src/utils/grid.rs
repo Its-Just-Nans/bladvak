@@ -18,9 +18,11 @@ pub struct Grid {
     /// Stroke width of the grid lines.
     pub stroke_width: f32,
 }
+
+/// Default grid spacing
 const DEFAULT_GRID_SPACING: Vec2 = vec2(20.0, 20.0);
 
-/// Gri rotation
+/// Default grid rotation
 const DEFAULT_GRID_ANGLE: f32 = 0.0;
 
 impl Default for Grid {
