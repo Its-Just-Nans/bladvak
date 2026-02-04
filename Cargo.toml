@@ -1,6 +1,6 @@
 [package]
 name = "bladvak"
-version = "1.2.7"
+version = "1.2.8"
 edition = "2024"
 description = "Base egui/eframe app - bladvak means 'pickaxe' in Gobbledegook"
 license = "MIT"
