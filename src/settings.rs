@@ -16,7 +16,6 @@ pub(crate) enum SelectedSetting {
     /// Panel setting
     Panel,
     /// Debug setting
-    #[cfg(debug_assertions)]
     Debug,
     /// Custom setting
     String(String),
@@ -139,12 +138,13 @@ where
                                 );
                             }
                         }
-                        #[cfg(debug_assertions)]
-                        ui.selectable_value(
-                            &mut self.internal.settings.selected_setting,
-                            SelectedSetting::Debug,
-                            "Debug",
-                        );
+                        if self.internal.settings.show_inspection {
+                            ui.selectable_value(
+                                &mut self.internal.settings.selected_setting,
+                                SelectedSetting::Debug,
+                                "Debug",
+                            );
+                        }
                     });
                 });
             });
@@ -169,7 +169,6 @@ where
                             }
                         }
                     }
-                    #[cfg(debug_assertions)]
                     SelectedSetting::Debug => {
                         self.show_debug_setting(ui);
                     }
