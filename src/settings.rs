@@ -243,6 +243,9 @@ where
             &mut self.internal.settings.show_inspection,
             "Show Debug panel",
         );
+        if ui.button("Organize windows").clicked() {
+            ui.memory_mut(eframe::egui::Memory::reset_areas);
+        }
         ui.separator();
         ui.heading("Theme");
         ui.horizontal(|ui| {
