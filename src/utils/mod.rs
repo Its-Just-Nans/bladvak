@@ -112,26 +112,24 @@ pub const fn is_native() -> bool {
 /// Copy the image to clipboard
 /// # Errors
 /// Error if fails to copy the image to clipboard
-#[cfg(not(target_arch = "wasm32"))]
-pub fn copy_image_to_clipboard(width: usize, height: usize, data: &[u8]) -> Result<(), String> {
-    use std::borrow::Cow;
-    let mut arboard =
-        arboard::Clipboard::new().map_err(|e| format!("Cannot access clipboard: {e}"))?;
-    let image = arboard::ImageData {
-        height,
-        width,
-        bytes: Cow::Borrowed(data),
-    };
-    arboard
-        .set_image(image)
-        .map_err(|e| format!("Cannot set image to clipboard: {e}"))
+pub fn set_image_in_clipboard(
+    ctx: &eframe::egui::Context,
+    width: usize,
+    height: usize,
+    data: &[u8],
+) -> Result<(), String> {
+    use eframe::egui::ColorImage;
+    let size = [width as _, height as _];
+    let color_image = ColorImage::from_rgba_unmultiplied(size, data);
+    ctx.copy_image(color_image);
+    Ok(())
 }
 
 /// Get the image from clipboard
 /// # Errors
 /// Error if fails to get the image from clipboard
 #[cfg(not(target_arch = "wasm32"))]
-pub fn copy_image_from_clipboard() -> Result<(usize, usize, Vec<u8>), String> {
+pub fn get_image_from_clipboard() -> Result<(usize, usize, Vec<u8>), String> {
     let mut arboard =
         arboard::Clipboard::new().map_err(|e| format!("Cannot access clipboard: {e}"))?;
     let image = arboard
@@ -144,14 +142,6 @@ pub fn copy_image_from_clipboard() -> Result<(usize, usize, Vec<u8>), String> {
 /// # Errors
 /// Error every time since clipboard is not supported on web
 #[cfg(target_arch = "wasm32")]
-pub fn copy_image_to_clipboard(_width: usize, _height: usize, _data: &[u8]) -> Result<(), String> {
-    Err("Clipboard is not supported on web".into())
-}
-
-/// Get the image from clipboard - not supported on web
-/// # Errors
-/// Error every time since clipboard is not supported on web
-#[cfg(target_arch = "wasm32")]
-pub fn copy_image_from_clipboard() -> Result<(usize, usize, Vec<u8>), String> {
+pub fn get_image_from_clipboard() -> Result<(usize, usize, Vec<u8>), String> {
     Err("Clipboard is not supported on web".into())
 }
