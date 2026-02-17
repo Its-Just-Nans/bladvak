@@ -300,7 +300,6 @@ where
                                         PanelOpen::None,
                                         PanelOpen::None.to_string(),
                                     );
-                                    ui.should_close()
                                 });
                             }
                         });

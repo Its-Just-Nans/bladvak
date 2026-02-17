@@ -1,6 +1,6 @@
 [package]
 name = "bladvak"
-version = "1.2.10"
+version = "1.2.11"
 edition = "2024"
 description = "Base egui/eframe app - bladvak means 'pickaxe' in Gobbledegook"
 license = "MIT"
@@ -34,12 +34,13 @@ egui_extras = { version = "0.33", features = [
 ] }
 rfd = "0.17.2"
 poll-promise = { version = "0.3", features = ["web"] }
-egui_plot = "0.34.0"
+egui_plot = "0.34.1"
 
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 env_logger = "0.11"
+arboard = "3.6.1"
 
 # web:
 [target.'cfg(target_arch = "wasm32")'.dependencies]
