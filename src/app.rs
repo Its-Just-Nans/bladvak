@@ -240,7 +240,7 @@ where
     }
 
     /// Show the central panel
-    pub fn central_panel(&mut self, ui: &mut egui::Ui) {
+    pub(crate) fn central_panel(&mut self, ui: &mut egui::Ui) {
         egui::CentralPanel::default()
             .frame(
                 egui::Frame::central_panel(&ui.ctx().global_style())
@@ -269,7 +269,7 @@ where
     }
 
     /// Show the top panel
-    pub fn top_panel(&mut self, ui: &mut egui::Ui) {
+    pub(crate) fn top_panel(&mut self, ui: &mut egui::Ui) {
         egui::Panel::top("top_panel").show_inside(ui, |ui| {
             // The top panel is often a good place for a menu bar:
 
@@ -319,7 +319,7 @@ where
     }
 
     /// Show the side panel
-    pub fn side_panel(&mut self, ui: &mut egui::Ui) {
+    pub(crate) fn side_panel(&mut self, ui: &mut egui::Ui) {
         let is_panels_in_sidebar = self
             .internal
             .panel_state
@@ -467,7 +467,7 @@ where
     /// Load previous app state (if any)
     // eframe: Note that you must enable the `persistence` feature for this to work.
     #[must_use]
-    pub fn get_saved_app_state(cc: &eframe::CreationContext<'_>) -> Option<Bladvak<M>> {
+    pub(crate) fn get_saved_app_state(cc: &eframe::CreationContext<'_>) -> Option<Bladvak<M>> {
         if let Some(storage) = cc.storage
             && let Some(saved_app_state) = eframe::get_value::<Bladvak<M>>(storage, eframe::APP_KEY)
         {
