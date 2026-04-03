@@ -74,7 +74,7 @@ where
     /// show setting popup
     fn show_settings_modal(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let value = self.internal.settings.selected_setting.clone();
-        egui::TopBottomPanel::bottom("bottom_settings")
+        egui::Panel::bottom("bottom_settings")
             .frame(
                 Frame::new()
                     .inner_margin(Margin {
@@ -101,10 +101,10 @@ where
                     },
                 );
             });
-        egui::SidePanel::left("left_panel_setting")
+        egui::Panel::left("left_panel_setting")
             .resizable(true)
             .frame(
-                egui::Frame::central_panel(&ui.ctx().style())
+                egui::Frame::central_panel(&ui.ctx().global_style())
                     .inner_margin(0)
                     .outer_margin(5.0),
             )

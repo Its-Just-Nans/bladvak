@@ -240,14 +240,14 @@ where
     }
 
     /// Show the central panel
-    pub fn central_panel(&mut self, ctx: &egui::Context) {
+    pub fn central_panel(&mut self, ui: &mut egui::Ui) {
         egui::CentralPanel::default()
             .frame(
-                egui::Frame::central_panel(&ctx.style())
+                egui::Frame::central_panel(&ui.ctx().global_style())
                     .inner_margin(0)
                     .outer_margin(0),
             )
-            .show(ctx, |ui| {
+            .show_inside(ui, |ui| {
                 self.app.central_panel(ui, &mut self.error_manager);
                 for one_panel in self.panel_list.iter().filter(|p| p.has_ui()) {
                     let panel_name = one_panel.name();
@@ -269,8 +269,8 @@ where
     }
 
     /// Show the top panel
-    pub fn top_panel(&mut self, ctx: &egui::Context) {
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+    pub fn top_panel(&mut self, ui: &mut egui::Ui) {
+        egui::Panel::top("top_panel").show_inside(ui, |ui| {
             // The top panel is often a good place for a menu bar:
 
             egui::MenuBar::new().ui(ui, |ui| {
@@ -309,7 +309,7 @@ where
                     }
                     let is_web = cfg!(target_arch = "wasm32");
                     if !is_web && ui.button("Quit").clicked() {
-                        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                        ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
                     }
                     egui::warn_if_debug_build(ui);
                 });
@@ -319,21 +319,21 @@ where
     }
 
     /// Show the side panel
-    pub fn side_panel(&mut self, ctx: &egui::Context) {
+    pub fn side_panel(&mut self, ui: &mut egui::Ui) {
         let is_panels_in_sidebar = self
             .internal
             .panel_state
             .iter()
             .any(|e| e.1.open == PanelOpen::AsSideBar);
         if is_panels_in_sidebar {
-            egui::SidePanel::right("my_panel")
+            egui::Panel::right("my_panel")
                 .frame(
-                    egui::Frame::central_panel(&ctx.style())
+                    egui::Frame::central_panel(&ui.ctx().global_style())
                         .inner_margin(0)
                         .outer_margin(0),
                 )
-                .min_width(self.internal.settings.min_width_sidebar)
-                .show(ctx, |side_panel_ui| {
+                .min_size(self.internal.settings.min_width_sidebar)
+                .show_inside(ui, |side_panel_ui| {
                     self.app.side_panel(side_panel_ui, |ui, app| {
                         for (idx, one_panel) in
                             self.panel_list
@@ -488,22 +488,22 @@ where
     }
 
     /// Called each time the UI needs repainting, which may be many times per second.
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        self.top_panel(ctx);
+    fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+        self.top_panel(ui);
 
         if self.app.is_side_panel() {
-            self.side_panel(ctx);
+            self.side_panel(ui);
         }
 
-        self.central_panel(ctx);
+        self.central_panel(ui);
 
-        match self.file_handler.handle_files(ctx) {
+        match self.file_handler.handle_files(ui) {
             Ok(Some(file)) => {
                 if let Err(err) = self.app.handle_file(file) {
                     self.error_manager.add_error(err);
                 }
                 // repaint with the file
-                ctx.request_repaint();
+                ui.ctx().request_repaint();
             }
             Ok(None) => {
                 // nothing to do
@@ -513,7 +513,7 @@ where
             }
         }
 
-        self.show_error_manager(ctx);
-        self.show_setting(ctx, frame);
+        self.show_error_manager(ui);
+        self.show_setting(ui, frame);
     }
 }
