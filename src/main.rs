@@ -1,5 +1,6 @@
-fn main(){
-    println!(r#"
+fn main() {
+    println!(
+        r#"
 #!/bin/bash
 # {}@{}
 
@@ -12,5 +13,8 @@ done
 curl -L -O "$repo/rust-toolchain"
 curl -L -O "$repo/index.html"
 sed -i "s/BLADVAK_APP/$(basename "$PWD")/g" index.html
-"#, env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+"#,
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_VERSION")
+    );
 }
