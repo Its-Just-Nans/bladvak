@@ -487,7 +487,7 @@ dependencies = [
 
 [[package]]
 name = "bladvak"
-version = "1.2.17"
+version = "1.2.18"
 dependencies = [
  "arboard",
  "eframe",
