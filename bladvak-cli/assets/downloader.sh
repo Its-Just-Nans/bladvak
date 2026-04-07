@@ -10,6 +10,8 @@ for file in pages.yml release.yml rust.yml typos.yml; do
   "$repo/$file"
 done
 
+curl -L -O "$repo/Trunk.toml"
+curl -L -O "$repo/flake.nix"
 curl -L -O "$repo/check.sh"
 curl -L -O "$repo/.gitignore"
 curl -L -O "$repo/rust-toolchain"
