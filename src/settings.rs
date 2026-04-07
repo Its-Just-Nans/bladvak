@@ -58,7 +58,7 @@ where
             self.error_manager.is_open = true;
         }
         egui::Window::new("Errors")
-            .id_salt("bladvak_errors_windows")
+            .id("bladvak_errors_windows".into())
             .open(&mut self.error_manager.is_open)
             .vscroll(true)
             .show(ctx, |ui| {
@@ -187,7 +187,7 @@ where
     /// Show settings Ui
     pub fn show_setting(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
         egui::Window::new("Inspection")
-            .id_salt("bladvak_inspection_windows")
+            .id("bladvak_inspection_windows".into())
             .open(&mut self.internal.settings.show_inspection)
             .vscroll(true)
             .show(ctx, |ui| {

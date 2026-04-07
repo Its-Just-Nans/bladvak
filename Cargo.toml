@@ -4,7 +4,7 @@ members = [
     ".",
     "bladvak-cli"
 ]
-default-members = ["bladvak-cli"]
+default-members = ["."]
 
 [package]
 name = "bladvak"
