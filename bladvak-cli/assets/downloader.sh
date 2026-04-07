@@ -1,7 +1,7 @@
 #!/bin/bash
 # bladvak assets downloader
 
-repo="https://raw.githubusercontent.com/Its-Just-Nans/bladvak/main/assets"
+repo="https://raw.githubusercontent.com/Its-Just-Nans/bladvak/main/bladvak-cli/assets"
 mkdir -p .github/workflows
 for file in pages.yml release.yml rust.yml typos.yml; do
   curl -L -o ".github/workflows/$file" \
