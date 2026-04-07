@@ -1,3 +1,11 @@
+[workspace]
+resolver = "3"
+members = [
+    ".",
+    "bladvak-cli"
+]
+default-members = ["bladvak-cli"]
+
 [package]
 name = "bladvak"
 version = "1.2.16"
