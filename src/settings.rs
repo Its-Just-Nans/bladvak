@@ -72,9 +72,9 @@ where
         self.error_manager.was_open = self.error_manager.is_open;
     }
 
-    /// show setting popup
-    fn show_settings_modal(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        let value = self.internal.settings.selected_setting.clone();
+    /// show setting popop bottom
+    #[inline]
+    fn show_settings_modal_bottom(ui: &mut egui::Ui) {
         egui::Panel::bottom("bottom_settings")
             .frame(
                 Frame::new()
@@ -108,6 +108,12 @@ where
                     },
                 );
             });
+    }
+
+    /// show setting popup
+    fn show_settings_modal(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        let value = self.internal.settings.selected_setting.clone();
+        Self::show_settings_modal_bottom(ui);
         egui::Panel::left("left_panel_setting")
             .resizable(true)
             .frame(
@@ -134,7 +140,6 @@ where
                                 "Panels",
                             );
                         }
-
                         for one_panel in &self.panel_list {
                             if one_panel.has_settings() {
                                 let one_setting_name = one_panel.name();
@@ -155,7 +160,6 @@ where
                     });
                 });
             });
-
         egui::CentralPanel::default().show_inside(ui, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 ui.set_min_width(ui.available_width());
