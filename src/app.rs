@@ -179,7 +179,10 @@ where
         } else {
             (M::default(), None)
         };
-        let app = M::try_new_with_args(saved_state_app, cc, vec_args)?;
+        let (app, creation_error) = match M::try_new_with_args(saved_state_app, cc, vec_args) {
+            Ok(app) => (app, None),
+            Err(err) => (M::default(), Some(err)),
+        };
         let panel_list = app.panel_list();
         let bladvak_internal = if let Some(saved_state) = saved_internal {
             let hashet_saved = saved_state
@@ -229,11 +232,18 @@ where
                 panel_state,
             }
         };
+        let error_manager = if let Some(err) = creation_error {
+            let mut manager = ErrorManager::default();
+            manager.add_error(err);
+            manager
+        } else {
+            ErrorManager::default()
+        };
         Ok(Self {
             app,
             internal: bladvak_internal,
             ignore_saved_state: false,
-            error_manager: ErrorManager::default(),
+            error_manager,
             file_handler: FileHandler::default(),
             panel_list,
         })
