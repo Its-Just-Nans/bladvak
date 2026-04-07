@@ -17,8 +17,8 @@ curl -L -O "$repo/index.html"
 sed -i "s/BLADVAK_APP/$app_name/g" index.html
 
 mkdir -p assets
-curl -L -O "$repo/sw.js"
-curl -L -O "$repo/manifest.json"
+curl -L -o "assets/sw.js" "$repo/sw.js"
+curl -L -o "assets/manifest.json" "$repo/manifest.json"
 sed -i "s/BLADVAK_APP/$app_name/g" sw.js
 sed -i "s/BLADVAK_APP/$app_name/g" manifest.json
 
