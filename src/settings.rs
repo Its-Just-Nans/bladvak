@@ -92,13 +92,18 @@ where
                     |modal_ui_left| {
                         modal_ui_left.horizontal_wrapped(|ui| {
                             ui.spacing_mut().item_spacing.x = 0.0;
-                            ui.add(
-                                egui::Hyperlink::from_label_and_url(
-                                    format!("{}@{}", M::name(), M::version()),
-                                    M::repo_url(),
-                                )
-                                .open_in_new_tab(true),
-                            );
+                            let repo_url = M::repo_url();
+                            if repo_url.is_empty() {
+                                ui.label(format!("{}@{}", M::name(), M::version()));
+                            } else {
+                                ui.add(
+                                    egui::Hyperlink::from_label_and_url(
+                                        format!("{}@{}", M::name(), M::version()),
+                                        M::repo_url(),
+                                    )
+                                    .open_in_new_tab(true),
+                                );
+                            }
                         });
                     },
                     |modal_ui_right| {
@@ -276,14 +281,17 @@ where
         });
         ui.horizontal_wrapped(|ui| {
             ui.spacing_mut().item_spacing.x = 0.0;
-            ui.label("Link to ");
-            ui.add(
-                egui::Hyperlink::from_label_and_url(
-                    format!("{} repository", M::name()),
-                    M::repo_url(),
-                )
-                .open_in_new_tab(true),
-            );
+            let repo_url = M::repo_url();
+            if !repo_url.is_empty() {
+                ui.label("Link to ");
+                ui.add(
+                    egui::Hyperlink::from_label_and_url(
+                        format!("{} repository", M::name()),
+                        M::repo_url(),
+                    )
+                    .open_in_new_tab(true),
+                );
+            }
         });
         ui.horizontal_wrapped(|ui| {
             ui.spacing_mut().item_spacing.x = 0.0;
