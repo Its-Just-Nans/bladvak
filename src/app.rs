@@ -443,10 +443,10 @@ where
                     canvas,
                     web_options,
                     Box::new(|cc| {
-                        Box::new(Bladvak::<M>::try_new_with_args(
+                        Ok(Box::new(Bladvak::<M>::try_new_with_args(
                             cc,
                             &["sqfd".to_string(), "sqfd".to_string()],
-                        ))
+                        )))
                     }),
                 )
                 .await;
