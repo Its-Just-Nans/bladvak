@@ -1,5 +1,5 @@
 var cacheName = "BLADVAK_APP-pwa";
-var filesToCache = ["./", "./index.html", "./BLADVAK_APP.js", "./BLADVAK_APP.wasm"];
+var filesToCache = ["./", "./index.html", "./BLADVAK_APP.js", "./BLADVAK_APP_bg.wasm"];
 
 async function networkFirst(request) {
     try {
