@@ -167,7 +167,7 @@ where
     /// Try to create a new app with args
     /// # Errors
     /// Can return an error if fails to create new app
-    fn try_new_with_args(cc: &CreationContext<'_>, vec_args: &[String]) -> Result<Self, AppError> {
+    fn try_new_with_args(cc: &CreationContext<'_>, vec_args: &[String]) -> Self {
         let (saved_state_app, saved_internal) = if let Some(saved) = Self::get_saved_app_state(cc) {
             if saved.ignore_saved_state {
                 log::info!("Explicitly ignoring saved state");
@@ -239,14 +239,14 @@ where
         } else {
             ErrorManager::default()
         };
-        Ok(Self {
+        Self {
             app,
             internal: bladvak_internal,
             ignore_saved_state: false,
             error_manager,
             file_handler: FileHandler::default(),
             panel_list,
-        })
+        }
     }
 
     /// Show the central panel
@@ -412,7 +412,7 @@ where
         eframe::run_native(
             &M::name(),
             native_options,
-            Box::new(|cc| Ok(Box::new(Bladvak::<M>::try_new_with_args(cc, &args)?))),
+            Box::new(|cc| Ok(Box::new(Bladvak::<M>::try_new_with_args(cc, &args)))),
         )
     }
 
@@ -443,16 +443,10 @@ where
                     canvas,
                     web_options,
                     Box::new(|cc| {
-                        match Bladvak::<M>::try_new_with_args(
+                        Box::new(Bladvak::<M>::try_new_with_args(
                             cc,
                             &["sqfd".to_string(), "sqfd".to_string()],
-                        ) {
-                            Ok(app) => Ok(Box::new(app)),
-                            Err(e) => {
-                                log::error!("Failed to create app: {e}");
-                                return Err(format!("Failed to create app: {e}").into());
-                            }
-                        }
+                        ))
                     }),
                 )
                 .await;
