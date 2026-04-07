@@ -8,7 +8,7 @@ default-members = ["bladvak-cli"]
 
 [package]
 name = "bladvak"
-version = "1.2.16"
+version = "1.2.17"
 edition = "2024"
 description = "Base egui/eframe app - bladvak means 'pickaxe' in Gobbledegook"
 license = "MIT"

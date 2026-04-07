@@ -58,6 +58,7 @@ where
             self.error_manager.is_open = true;
         }
         egui::Window::new("Errors")
+            .id_salt("bladvak_errors_windows")
             .open(&mut self.error_manager.is_open)
             .vscroll(true)
             .show(ctx, |ui| {
@@ -91,7 +92,13 @@ where
                     |modal_ui_left| {
                         modal_ui_left.horizontal_wrapped(|ui| {
                             ui.spacing_mut().item_spacing.x = 0.0;
-                            ui.label(format!("{}@{}", M::name(), M::version()));
+                            ui.add(
+                                egui::Hyperlink::from_label_and_url(
+                                    format!("{}@{}", M::name(), M::version()),
+                                    M::repo_url(),
+                                )
+                                .open_in_new_tab(true),
+                            );
                         });
                     },
                     |modal_ui_right| {
@@ -180,6 +187,7 @@ where
     /// Show settings Ui
     pub fn show_setting(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
         egui::Window::new("Inspection")
+            .id_salt("bladvak_inspection_windows")
             .open(&mut self.internal.settings.show_inspection)
             .vscroll(true)
             .show(ctx, |ui| {
