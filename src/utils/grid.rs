@@ -4,7 +4,7 @@ use eframe::egui::{self, Color32, Painter, Rect, Stroke, Vec2, emath::Rot2, vec2
 use std::f32::consts::PI;
 
 /// Grid options
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct Grid {
     /// Spacing between grid lines.
     pub spacing: Vec2,
