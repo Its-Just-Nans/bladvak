@@ -66,6 +66,9 @@ pub trait BladvakApp<'a>: Sized {
         cc: &CreationContext<'_>,
         args: &[String],
     ) -> Result<Self, AppError>;
+
+    /// Called when saving the app state
+    fn on_save(&mut self) {}
 }
 
 /// Trait for Bladvak panel
@@ -488,6 +491,7 @@ where
 {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        self.app.on_save();
         eframe::set_value(storage, eframe::APP_KEY, self);
     }
 
