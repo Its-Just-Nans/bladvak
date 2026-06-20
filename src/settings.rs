@@ -250,7 +250,7 @@ where
             }
         });
         ui.horizontal(|ui| {
-            ui.label(format!("Reset {}", self.error_manager.title()));
+            ui.label(format!("Reset {}", ErrorManager::title()));
             ui.button("⟳").clicked().then(|| {
                 self.error_manager = ErrorManager::default();
             });

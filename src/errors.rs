@@ -134,7 +134,18 @@ impl ErrorManager {
 
     /// Errors Title
     #[must_use]
-    pub fn title(&self) -> &'static str {
+    pub(crate) fn title() -> &'static str {
         "Error window"
+    }
+
+    /// Check if there are at least one error
+    #[must_use]
+    pub fn is_some_error(&self) -> bool {
+        !self.errors.is_empty()
+    }
+
+    /// Clears errors
+    pub fn clear(&mut self) {
+        self.errors.clear();
     }
 }

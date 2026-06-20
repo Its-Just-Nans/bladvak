@@ -65,6 +65,7 @@ pub trait BladvakApp<'a>: Sized {
         saved_state: Self,
         cc: &CreationContext<'_>,
         args: &[String],
+        error_manager: &mut ErrorManager,
     ) -> Result<Self, AppError>;
 
     /// Called when saving the app state
@@ -182,10 +183,12 @@ where
         } else {
             (M::default(), None)
         };
-        let (app, creation_error) = match M::try_new_with_args(saved_state_app, cc, vec_args) {
-            Ok(app) => (app, None),
-            Err(err) => (M::default(), Some(err)),
-        };
+        let mut error_manager = ErrorManager::default();
+        let (app, creation_error) =
+            match M::try_new_with_args(saved_state_app, cc, vec_args, &mut error_manager) {
+                Ok(app) => (app, None),
+                Err(err) => (M::default(), Some(err)),
+            };
         let panel_list = app.panel_list();
         let bladvak_internal = if let Some(saved_state) = saved_internal {
             let hashet_saved = saved_state
@@ -235,13 +238,9 @@ where
                 panel_state,
             }
         };
-        let error_manager = if let Some(err) = creation_error {
-            let mut manager = ErrorManager::default();
-            manager.add_error(err);
-            manager
-        } else {
-            ErrorManager::default()
-        };
+        if let Some(err) = creation_error {
+            error_manager.add_error(err);
+        }
         Self {
             app,
             internal: bladvak_internal,
