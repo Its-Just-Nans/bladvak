@@ -29,7 +29,7 @@ for i in *.svg; do
     fi
 done
 
-if [ ! -f "${i%.svg}.png" ]; then
+if [ ! -f "$APP_NAME.png" ]; then
     convert -background none "$APP_NAME.svg" -resize 512x512 "$APP_NAME.png"
 fi
 
