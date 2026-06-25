@@ -24,7 +24,7 @@ if [ ! -f "favicon.ico" ]; then
 fi
 
 for i in *.svg; do
-    if [ "$i" = "$APP_NAME.png" ]; then
+    if [ "$i" = "$APP_NAME.svg" ]; then
         continue
     fi
     if [ ! -f "${i%.svg}.png" ]; then
