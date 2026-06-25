@@ -24,6 +24,6 @@ curl -L -o "assets/manifest.json" "$repo/manifest.json"
 sed -i "s/BLADVAK_APP/$app_name/g" assets/sw.js
 sed -i "s/BLADVAK_APP/$app_name/g" assets/manifest.json
 curl -L -o "assets/gen_assets.sh" "$repo/gen_assets.sh"
-sed -i "s/BLADVAK_APP/$app_name/g" gen_assets.sh
+sed -i "s/BLADVAK_APP/$app_name/g" assets/gen_assets.sh
 chmod +x assets/gen_assets.sh
 
