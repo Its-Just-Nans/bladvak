@@ -24,6 +24,9 @@ if [ ! -f "favicon.ico" ]; then
 fi
 
 for i in *.svg; do
+    if [ "$i" = "$APP_NAME.png" ]; then
+        continue
+    fi
     if [ ! -f "${i%.svg}.png" ]; then
         convert -background none "$i" -resize 64x64 "${i%.svg}.png"
     fi
