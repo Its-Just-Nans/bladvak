@@ -4,10 +4,15 @@
 repo="https://raw.githubusercontent.com/Its-Just-Nans/bladvak/main/bladvak-cli/assets"
 app_name="$(basename "$PWD")"
 
+if [ "$app_name" = "assets" ]; then
+    echo "You are in the assets/ folder - exiting"
+    exit 1
+fi
+
 mkdir -p .github/workflows
 for file in pages.yml release.yml rust.yml typos.yml; do
-  curl -L -o ".github/workflows/$file" \
-  "$repo/$file"
+    curl -L -o ".github/workflows/$file" \
+    "$repo/$file"
 done
 
 curl -L -O "$repo/Trunk.toml"
@@ -27,3 +32,5 @@ curl -L -o "assets/gen_assets.sh" "$repo/gen_assets.sh"
 sed -i "s/BLADVAK_APP/$app_name/g" assets/gen_assets.sh
 chmod +x assets/gen_assets.sh
 
+# The line beneath this is called `modeline`. See `:help modeline`
+# vim: ts=4 sts=4 sw=4 et
