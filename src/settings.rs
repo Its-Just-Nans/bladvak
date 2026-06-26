@@ -86,7 +86,7 @@ where
                     })
                     .fill(ui.style().visuals.panel_fill),
             )
-            .show_inside(ui, |ui| {
+            .show(ui, |ui| {
                 egui::Sides::new().show(
                     ui,
                     |modal_ui_left| {
@@ -126,7 +126,7 @@ where
                     .inner_margin(0)
                     .outer_margin(5.0),
             )
-            .show_inside(ui, |ui| {
+            .show(ui, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.heading("Settings");
                 });
@@ -165,7 +165,7 @@ where
                     });
                 });
             });
-        egui::CentralPanel::default().show_inside(ui, |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 ui.set_min_width(ui.available_width());
                 match value {

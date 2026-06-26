@@ -259,7 +259,7 @@ where
                     .inner_margin(0)
                     .outer_margin(0),
             )
-            .show_inside(ui, |ui| {
+            .show(ui, |ui| {
                 self.app.central_panel(ui, &mut self.error_manager);
                 for one_panel in self.panel_list.iter().filter(|p| p.has_ui()) {
                     let panel_name = one_panel.name();
@@ -282,7 +282,7 @@ where
 
     /// Show the top panel
     pub(crate) fn top_panel(&mut self, ui: &mut egui::Ui) {
-        egui::Panel::top("top_panel").show_inside(ui, |ui| {
+        egui::Panel::top("top_panel").show(ui, |ui| {
             // The top panel is often a good place for a menu bar:
 
             egui::MenuBar::new().ui(ui, |ui| {
@@ -295,6 +295,17 @@ where
                     if self.app.panel_options_as_menu() && !self.internal.panel_state.is_empty() {
                         ui.menu_button("Panels", |ui| {
                             for one_panel in &mut self.internal.panel_state {
+                                if let Some(panel) =
+                                    self.panel_list.iter().find(|p| p.name() == one_panel.0)
+                                {
+                                    // Check if plugin has a UI
+                                    if !panel.has_ui() {
+                                        continue;
+                                    }
+                                } else {
+                                    // Plugin not found - weird
+                                    continue;
+                                }
                                 ui.menu_button(one_panel.0, |ui| {
                                     let value = &mut one_panel.1.open;
                                     ui.selectable_value(
@@ -332,47 +343,53 @@ where
 
     /// Show the side panel
     pub(crate) fn side_panel(&mut self, ui: &mut egui::Ui) {
-        let is_panels_in_sidebar = self
-            .internal
-            .panel_state
-            .iter()
-            .any(|e| e.1.open == PanelOpen::AsSideBar);
-        if is_panels_in_sidebar {
-            egui::Panel::right("my_panel")
-                .frame(
-                    egui::Frame::central_panel(&ui.ctx().global_style())
-                        .inner_margin(0)
-                        .outer_margin(0),
-                )
-                .min_size(self.internal.settings.min_width_sidebar)
-                .show_inside(ui, |side_panel_ui| {
-                    self.app.side_panel(side_panel_ui, |ui, app| {
-                        for (idx, one_panel) in
-                            self.panel_list
-                                .iter()
-                                .filter(|p| {
-                                    p.has_ui()
-                                        && self.internal.panel_state.get(p.name()).is_some_and(
-                                            |p_state| p_state.open == PanelOpen::AsSideBar,
-                                        )
-                                })
-                                .enumerate()
-                        {
-                            if idx != 0 {
-                                ui.separator();
-                            }
-                            one_panel.ui(app, ui, &mut self.error_manager);
-                        }
-                        // self.app.side_panel(side_panel_ui, &mut self.error_manager);
-                        ui.with_layout(
-                            egui::Layout::bottom_up(egui::Align::RIGHT),
-                            |ui: &mut egui::Ui| {
-                                egui::warn_if_debug_build(ui);
-                            },
-                        );
-                    });
-                });
+        let is_panels_in_sidebar = self.panel_list.iter().any(|p| {
+            p.has_ui()
+                && self
+                    .internal
+                    .panel_state
+                    .get(p.name())
+                    .is_some_and(|p_state| p_state.open == PanelOpen::AsSideBar)
+        });
+        if !is_panels_in_sidebar {
+            return;
         }
+        egui::Panel::right("my_panel")
+            .frame(
+                egui::Frame::central_panel(&ui.ctx().global_style())
+                    .inner_margin(0)
+                    .outer_margin(0),
+            )
+            .min_size(self.internal.settings.min_width_sidebar)
+            .show(ui, |side_panel_ui| {
+                self.app.side_panel(side_panel_ui, |ui, app| {
+                    for (idx, one_panel) in self
+                        .panel_list
+                        .iter()
+                        .filter(|p| {
+                            p.has_ui()
+                                && self
+                                    .internal
+                                    .panel_state
+                                    .get(p.name())
+                                    .is_some_and(|p_state| p_state.open == PanelOpen::AsSideBar)
+                        })
+                        .enumerate()
+                    {
+                        if idx != 0 {
+                            ui.separator();
+                        }
+                        one_panel.ui(app, ui, &mut self.error_manager);
+                    }
+                    // self.app.side_panel(side_panel_ui, &mut self.error_manager);
+                    ui.with_layout(
+                        egui::Layout::bottom_up(egui::Align::RIGHT),
+                        |ui: &mut egui::Ui| {
+                            egui::warn_if_debug_build(ui);
+                        },
+                    );
+                });
+            });
     }
 
     /// When compiling natively

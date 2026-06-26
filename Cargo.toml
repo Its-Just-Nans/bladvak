@@ -23,7 +23,7 @@ all-features = true
 targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
 [dependencies]
-eframe = { version = "0.34", default-features = false, features = [
+eframe = { version = "0.35", default-features = false, features = [
     "accesskit",     # Make egui compatible with screen readers. NOTE: adds a lot of dependencies.
     "default_fonts", # Embed the default egui fonts.
     "glow",          # Use the glow rendering backend. Alternative: "wgpu".
@@ -35,14 +35,14 @@ eframe = { version = "0.34", default-features = false, features = [
 log = "0.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0.150"
-egui_extras = { version = "0.34", features = [
+egui_extras = { version = "0.35", features = [
     "all_loaders",
     "serde",
     "syntect",
 ] }
 rfd = "0.17.2"
 poll-promise = { version = "0.3", features = ["web"] }
-egui_plot = "0.35.0"
+egui_plot = "0.36.0"
 
 
 # native:
@@ -53,7 +53,7 @@ arboard = "3.6.1"
 # web:
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4"
-web-sys = { version = "0.3.102", features = [
+web-sys = { version = "0.3.103", features = [
     "Url",
 ] } # to access the DOM (to hide the loading text)
 js-sys = "0.3"
