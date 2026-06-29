@@ -15,8 +15,6 @@ pub(crate) enum SelectedSetting {
     General,
     /// Panel setting
     Panel,
-    /// Debug setting
-    Debug,
     /// Custom setting
     String(String),
 }
@@ -155,13 +153,6 @@ where
                                 );
                             }
                         }
-                        if self.internal.settings.show_inspection {
-                            ui.selectable_value(
-                                &mut self.internal.settings.selected_setting,
-                                SelectedSetting::Debug,
-                                "Debug",
-                            );
-                        }
                     });
                 });
             });
@@ -185,9 +176,6 @@ where
                             }
                         }
                     }
-                    SelectedSetting::Debug => {
-                        self.show_debug_setting(ui);
-                    }
                 }
             });
         });
@@ -195,13 +183,17 @@ where
 
     /// Show settings Ui
     pub fn show_setting(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
+        let mut show_inspection = self.internal.settings.show_inspection;
         egui::Window::new("Inspection")
             .id("bladvak_inspection_windows".into())
-            .open(&mut self.internal.settings.show_inspection)
+            .open(&mut show_inspection)
             .vscroll(true)
             .show(ctx, |ui| {
                 ctx.inspection_ui(ui);
+                ui.separator();
+                self.show_debug_setting(ui);
             });
+        self.internal.settings.show_inspection = show_inspection;
         if self.internal.settings.open {
             let modal = Modal::new(Id::new("Modal settings")).show(ctx, |ui| {
                 self.show_settings_modal(ui, frame);
@@ -308,21 +300,25 @@ where
 
     /// Show debug information
     fn show_debug_setting(&mut self, ui: &mut egui::Ui) {
-        ui.heading("Debug");
-
-        ui.label("App state");
-        if let Ok(serialized) = serde_json::to_string_pretty(&self.app) {
-            let mut mut_serial = serialized;
-            ui.text_edit_multiline(&mut mut_serial);
-        } else {
-            ui.label("Failed to serialize");
-        }
-        ui.label("Internal state (bladvak)");
-        if let Ok(serialized) = serde_json::to_string_pretty(&self.internal) {
-            let mut mut_serial = serialized;
-            ui.text_edit_multiline(&mut mut_serial);
-        } else {
-            ui.label("Failed to serialize");
-        }
+        ui.collapsing("App state", |ui| {
+            ui.add_enabled_ui(false, |ui| {
+                if let Ok(serialized) = serde_json::to_string_pretty(&self.app) {
+                    let mut mut_serial = serialized;
+                    ui.text_edit_multiline(&mut mut_serial);
+                } else {
+                    ui.label("Failed to serialize");
+                }
+            });
+        });
+        ui.collapsing("Internal state (bladvak)", |ui| {
+            ui.add_enabled_ui(false, |ui| {
+                if let Ok(serialized) = serde_json::to_string_pretty(&self.internal) {
+                    let mut mut_serial = serialized;
+                    ui.text_edit_multiline(&mut mut_serial);
+                } else {
+                    ui.label("Failed to serialize");
+                }
+            });
+        });
     }
 }
