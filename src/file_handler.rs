@@ -104,18 +104,6 @@ impl FileHandler {
         self.file_upload = None;
     }
 
-    /// Handle file upload
-    fn handle_file_upload(&mut self) -> Result<FileState, AppError> {
-        match &self.file_upload {
-            Some(result) => match result.ready() {
-                Some(Ok(state)) => Ok(state.clone()),
-                Some(Err(e)) => Err(e.clone()),
-                None => Ok(FileState::UploadedOrSelected), // promise not ready
-            },
-            None => Ok(FileState::NoUpload), // no file upload
-        }
-    }
-
     /// Handle file dropped
     fn handle_file_dropped(&mut self) -> Result<Option<File>, AppError> {
         if self.dropped_files.is_empty() {
@@ -151,7 +139,15 @@ impl FileHandler {
                 self.dropped_files.clone_from(&i.raw.dropped_files);
             }
         });
-        match self.handle_file_upload() {
+        let file_upload_state = match &self.file_upload {
+            Some(result) => match result.ready() {
+                Some(Ok(state)) => Ok(state.clone()),
+                Some(Err(e)) => Err(e.clone()),
+                None => Ok(FileState::UploadedOrSelected), // promise not ready
+            },
+            None => Ok(FileState::NoUpload), // no file upload
+        };
+        match file_upload_state {
             Ok(state) => match state {
                 FileState::NotSelected => {
                     log::info!("No file selected");
@@ -159,6 +155,7 @@ impl FileHandler {
                 }
                 FileState::UploadedOrSelected => {
                     log::info!("File is being uploaded or selected...");
+                    ctx.request_repaint();
                     return Ok(None);
                 }
                 FileState::Ready(data) => {
