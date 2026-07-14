@@ -94,15 +94,29 @@ pub trait BladvakPanel: Debug {
 }
 
 /// Panel open state
-#[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum PanelOpen {
     /// In a window
     AsWindows,
     /// In sidebar
-    #[default]
     AsSideBar,
     /// Hidden state
     None,
+}
+
+#[allow(clippy::derivable_impls)]
+impl Default for PanelOpen {
+    fn default() -> Self {
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            Self::AsSideBar
+        }
+        // as windows on web
+        #[cfg(target_arch = "wasm32")]
+        {
+            Self::AsWindows
+        }
+    }
 }
 
 impl Display for PanelOpen {
