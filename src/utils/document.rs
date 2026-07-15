@@ -1,6 +1,27 @@
 //! Documents
 
-use std::slice::{Iter, IterMut};
+use std::{
+    fmt::{Debug, Display},
+    path::Path,
+    slice::{Iter, IterMut},
+};
+
+use eframe::egui;
+
+/// Document trait
+pub trait DocumentTrait {
+    /// show the name
+    fn name(&self) -> impl Display {
+        let filename = self
+            .path()
+            .file_name()
+            .unwrap_or_else(|| self.path().as_os_str());
+        filename.display()
+    }
+
+    /// Get the path of the document
+    fn path(&self) -> &Path;
+}
 
 /// Documents
 #[derive(serde::Deserialize, serde::Serialize, Debug, Default)]
@@ -85,5 +106,30 @@ impl<'a, D> IntoIterator for &'a mut Documents<D> {
     type IntoIter = std::slice::IterMut<'a, D>;
     fn into_iter(self) -> Self::IntoIter {
         self.iter_mut()
+    }
+}
+
+impl<D> Documents<D>
+where
+    D: DocumentTrait + Debug + Default,
+{
+    /// Show files list
+    pub fn show_files(&mut self, ui: &mut egui::Ui) {
+        let mut current_idx = self.current_idx;
+        let mut to_remove = None;
+
+        for (idx, one_doc) in self.inner.iter().enumerate() {
+            ui.horizontal(|ui| {
+                ui.selectable_value(&mut current_idx, idx, format!("{}", one_doc.name()));
+                if ui.button("x").clicked() {
+                    to_remove = Some(idx);
+                }
+            });
+            ui.separator();
+        }
+        self.current_idx = current_idx;
+        if let Some(index) = to_remove {
+            self.remove(index);
+        }
     }
 }
