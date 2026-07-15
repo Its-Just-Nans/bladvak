@@ -5,7 +5,9 @@ use std::path::PathBuf;
 
 use crate::AppError;
 
+pub mod document;
 pub mod grid;
+pub use document::Documents;
 
 /// Save the data to a file
 /// # Errors
