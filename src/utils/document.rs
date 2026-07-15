@@ -113,8 +113,8 @@ impl<D> Documents<D>
 where
     D: DocumentTrait + Debug + Default,
 {
-    /// Show files list
-    pub fn show_files(&mut self, ui: &mut egui::Ui) {
+    /// Show list of file
+    pub fn show_file_list(&mut self, ui: &mut egui::Ui) {
         let mut current_idx = self.current_idx;
         let mut to_remove = None;
 
