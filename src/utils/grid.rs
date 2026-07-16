@@ -8,15 +8,14 @@ use std::f32::consts::PI;
 pub struct Grid {
     /// Spacing between grid lines.
     pub spacing: Vec2,
-
     /// Angle of the grid.
     pub angle: f32,
-
     /// Color of the grid lines.
     pub color: Color32,
-
     /// Stroke width of the grid lines.
     pub stroke_width: f32,
+    /// is enabled
+    pub is_enabled: bool,
 }
 
 /// Default grid spacing
@@ -32,6 +31,7 @@ impl Default for Grid {
             angle: DEFAULT_GRID_ANGLE,
             color: Color32::BLACK,
             stroke_width: 0.5,
+            is_enabled: true,
         }
     }
 }
@@ -75,6 +75,9 @@ impl Grid {
     }
     /// draw the grid
     pub fn draw(&self, viewport: &Rect, painter: &Painter) {
+        if !self.is_enabled {
+            return;
+        }
         let bg_stroke = Stroke::new(self.stroke_width, self.color);
 
         let spacing = vec2(self.spacing.x.max(1.0), self.spacing.y.max(1.0));
