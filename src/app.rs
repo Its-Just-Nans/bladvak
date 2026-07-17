@@ -23,8 +23,26 @@ pub trait BladvakApp<'a>: Sized {
     }
     /// Central panel ui
     fn central_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager);
+    /// Side panel frame
+    fn side_panel_frame(&mut self, ui: &mut egui::Ui) -> egui::Frame {
+        egui::Frame::central_panel(&ui.ctx().global_style())
+            .inner_margin(0)
+            .outer_margin(0)
+    }
     /// Side panel panel ui
-    fn side_panel(&mut self, ui: &mut egui::Ui, func_ui: impl FnOnce(&mut egui::Ui, &mut Self));
+    fn side_panel(&mut self, ui: &mut egui::Ui, func_ui: impl FnOnce(&mut egui::Ui, &mut Self)) {
+        egui::Frame::new()
+            .inner_margin(8)
+            .fill(ui.ctx().global_style().visuals.panel_fill)
+            .show(ui, |ui| {
+                func_ui(ui, self);
+            });
+    }
+
+    /// Window panel ui
+    fn window_panel_frame(&mut self, ui: &mut egui::Ui) -> egui::Frame {
+        egui::Frame::window(&ui.ctx().global_style())
+    }
 
     /// handle a file input
     /// # Errors
@@ -283,6 +301,7 @@ where
                         let mut open = true;
                         egui::Window::new(panel_name)
                             .open(&mut open)
+                            .frame(self.app.window_panel_frame(ui))
                             .show(ui.ctx(), |window_ui| {
                                 one_panel.ui(&mut self.app, window_ui, &mut self.error_manager);
                             });
@@ -369,40 +388,35 @@ where
             return;
         }
         egui::Panel::right("my_panel")
-            .frame(
-                egui::Frame::central_panel(&ui.ctx().global_style())
-                    .inner_margin(0)
-                    .outer_margin(0),
-            )
+            .frame(self.app.side_panel_frame(ui))
             .min_size(self.internal.settings.min_width_sidebar)
             .show(ui, |side_panel_ui| {
-                self.app.side_panel(side_panel_ui, |ui, app| {
-                    for (idx, one_panel) in self
-                        .panel_list
-                        .iter()
-                        .filter(|p| {
-                            p.has_ui()
-                                && self
-                                    .internal
-                                    .panel_state
-                                    .get(p.name())
-                                    .is_some_and(|p_state| p_state.open == PanelOpen::AsSideBar)
-                        })
-                        .enumerate()
-                    {
-                        if idx != 0 {
-                            ui.separator();
-                        }
-                        one_panel.ui(app, ui, &mut self.error_manager);
+                for (idx, one_panel) in self
+                    .panel_list
+                    .iter()
+                    .filter(|p| {
+                        p.has_ui()
+                            && self
+                                .internal
+                                .panel_state
+                                .get(p.name())
+                                .is_some_and(|p_state| p_state.open == PanelOpen::AsSideBar)
+                    })
+                    .enumerate()
+                {
+                    if idx != 0 {
+                        side_panel_ui.separator();
                     }
-                    // self.app.side_panel(side_panel_ui, &mut self.error_manager);
-                    ui.with_layout(
-                        egui::Layout::bottom_up(egui::Align::RIGHT),
-                        |ui: &mut egui::Ui| {
-                            egui::warn_if_debug_build(ui);
-                        },
-                    );
-                });
+                    self.app.side_panel(side_panel_ui, |ui, app| {
+                        one_panel.ui(app, ui, &mut self.error_manager);
+                    });
+                }
+                side_panel_ui.with_layout(
+                    egui::Layout::bottom_up(egui::Align::RIGHT),
+                    |ui: &mut egui::Ui| {
+                        egui::warn_if_debug_build(ui);
+                    },
+                );
             });
     }
 
