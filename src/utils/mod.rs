@@ -129,24 +129,3 @@ pub fn set_image_in_clipboard(
     ctx.copy_image(color_image);
     Ok(())
 }
-
-/// Get the image from clipboard
-/// # Errors
-/// Error if fails to get the image from clipboard
-#[cfg(not(target_arch = "wasm32"))]
-pub fn get_image_from_clipboard() -> Result<(usize, usize, Vec<u8>), String> {
-    let mut arboard =
-        arboard::Clipboard::new().map_err(|e| format!("Cannot access clipboard: {e}"))?;
-    let image = arboard
-        .get_image()
-        .map_err(|e| format!("Cannot get image from clipboard: {e}"))?;
-    Ok((image.width, image.height, image.bytes.into_owned()))
-}
-
-/// Get the image from clipboard - not supported on web
-/// # Errors
-/// Error every time since clipboard is not supported on web
-#[cfg(target_arch = "wasm32")]
-pub fn get_image_from_clipboard() -> Result<(usize, usize, Vec<u8>), String> {
-    Err("Clipboard is not supported on web".into())
-}
