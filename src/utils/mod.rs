@@ -5,8 +5,11 @@ use std::path::PathBuf;
 
 use crate::AppError;
 
+pub mod clipboard;
 pub mod document;
 pub mod grid;
+
+pub use clipboard::{BladvakClipBoard, LazyFile};
 pub use document::Documents;
 
 /// Save the data to a file
