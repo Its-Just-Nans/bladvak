@@ -93,7 +93,11 @@ impl BladvakClipBoard {
                         self.promise_file = None;
                         return Some(Ok(data));
                     }
-                    Some(Err(err)) => return Some(Err(err.to_string())),
+                    Some(Err(err)) => {
+                        let error_str = err.to_string();
+                        self.promise_file = None;
+                        return Some(Err(error_str));
+                    }
                     None => {
                         ctx.request_repaint();
                         // not ready
@@ -124,7 +128,11 @@ impl BladvakClipBoard {
                         self.promise_text = None;
                         return Some(Ok(text_data));
                     }
-                    Some(Err(err)) => return Some(Err(err.to_string())),
+                    Some(Err(err)) => {
+                        let error_str = err.to_string();
+                        self.promise_text = None;
+                        return Some(Err(error_str));
+                    }
                     None => {
                         ctx.request_repaint();
                         // not ready
@@ -168,7 +176,11 @@ impl BladvakClipBoard {
                         let raw = img.to_rgba8().into_raw();
                         return Some(Ok((raw, width as usize, height as usize)));
                     }
-                    Some(Err(err)) => return Some(Err(err.to_string())),
+                    Some(Err(err)) => {
+                        let error_str = err.to_string();
+                        self.promise_image = None;
+                        return Some(Err(error_str));
+                    }
                     None => {
                         ctx.request_repaint();
                         // not ready
