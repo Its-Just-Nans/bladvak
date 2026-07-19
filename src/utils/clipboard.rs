@@ -235,26 +235,32 @@ fn get_clipboard_file() -> poll_promise::Promise<Result<Vec<u8>, String>> {
             let item: web_sys::ClipboardItem = items.get(i).unchecked_into();
 
             let types = item.types();
+            log::info!("Available types for clipboard paste: {:?}", types);
 
-            for j in 0..types.length() {
-                let mime = types.get(j).as_string().unwrap();
+            let correct_type_index = types
+                .iter()
+                .position(|t| {
+                    t.as_string()
+                        .map(|s| s.starts_with("image"))
+                        .unwrap_or(false)
+                })
+                .unwrap_or(0) as u32;
+            let mime = types.get(correct_type_index).as_string().unwrap();
 
-                let blob = JsFuture::from(item.get_type(&mime))
-                    .await
-                    .map_err(|e| format!("{e:?}"))?
-                    .dyn_into::<web_sys::Blob>()
-                    .map_err(|_| "Failed to cast Blob".to_string())?;
+            let blob = JsFuture::from(item.get_type(&mime))
+                .await
+                .map_err(|e| format!("{e:?}"))?
+                .dyn_into::<web_sys::Blob>()
+                .map_err(|_| "Failed to cast Blob".to_string())?;
 
-                let buffer = JsFuture::from(blob.array_buffer())
-                    .await
-                    .map_err(|e| format!("{e:?}"))?;
+            let buffer = JsFuture::from(blob.array_buffer())
+                .await
+                .map_err(|e| format!("{e:?}"))?;
 
-                let bytes = Uint8Array::new(&buffer).to_vec();
+            let bytes = Uint8Array::new(&buffer).to_vec();
 
-                return Ok(bytes);
-            }
+            return Ok(bytes);
         }
-
         Err("No file found".to_string())
     })
 }
