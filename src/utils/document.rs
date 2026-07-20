@@ -49,6 +49,16 @@ impl<D> Documents<D> {
         Ok(())
     }
 
+    /// get current document
+    #[must_use]
+    pub fn get_current_doc(&self) -> Option<&D> {
+        if self.inner.is_empty() {
+            return None;
+        }
+        let idx = self.current_idx % self.inner.len();
+        Some(&self.inner[idx])
+    }
+
     /// get current document as mutable
     pub fn get_current_doc_mut(&mut self) -> Option<&mut D> {
         if self.inner.is_empty() {
