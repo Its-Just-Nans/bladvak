@@ -39,6 +39,12 @@ impl<D> Documents<D> {
         self.current_idx
     }
 
+    /// get document at index
+    #[must_use]
+    pub fn get(&self, index: usize) -> Option<&D> {
+        self.inner.get(index)
+    }
+
     /// set the current index
     /// # Errors
     /// Return error if the index is incorrect
