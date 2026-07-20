@@ -45,6 +45,12 @@ impl<D> Documents<D> {
         self.inner.get(index)
     }
 
+    /// get document mut at index
+    #[must_use]
+    pub fn get_mut(&mut self, index: usize) -> Option<&mut D> {
+        self.inner.get_mut(index)
+    }
+
     /// set the current index
     /// # Errors
     /// Return error if the index is incorrect
