@@ -33,8 +33,8 @@ pub use log;
 pub use rfd;
 pub use serde;
 
+#[cfg(target_arch = "wasm32")]
+pub use eframe::web_sys;
 /// re-export wasm
 #[cfg(target_arch = "wasm32")]
 pub use js_sys;
-#[cfg(target_arch = "wasm32")]
-pub use web_sys;

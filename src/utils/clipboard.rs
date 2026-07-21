@@ -307,12 +307,12 @@ impl BladvakClipBoard {
 /// Error every time since clipboard is not supported on web
 #[cfg(target_arch = "wasm32")]
 pub fn get_clipboard_image() -> poll_promise::Promise<Result<Vec<u8>, String>> {
+    use eframe::web_sys::wasm_bindgen::JsCast;
     use js_sys::Array;
     use js_sys::Uint8Array;
     use wasm_bindgen_futures::JsFuture;
-    use web_sys::wasm_bindgen::JsCast;
     poll_promise::Promise::spawn_local(async {
-        let window = web_sys::window().ok_or("No window")?;
+        let window = eframe::web_sys::window().ok_or("No window")?;
 
         let clipboard = window.navigator().clipboard();
 
@@ -327,7 +327,7 @@ pub fn get_clipboard_image() -> poll_promise::Promise<Result<Vec<u8>, String>> {
         }
 
         for i in 0..items.length() {
-            let item: web_sys::ClipboardItem = items.get(i).unchecked_into();
+            let item: eframe::web_sys::ClipboardItem = items.get(i).unchecked_into();
 
             let types = item.types();
             log::info!("Available types for clipboard paste: {:?}", types);
@@ -345,7 +345,7 @@ pub fn get_clipboard_image() -> poll_promise::Promise<Result<Vec<u8>, String>> {
             let blob = JsFuture::from(item.get_type(&mime))
                 .await
                 .map_err(|e| format!("{e:?}"))?
-                .dyn_into::<web_sys::Blob>()
+                .dyn_into::<eframe::web_sys::Blob>()
                 .map_err(|_| "Failed to cast Blob".to_string())?;
 
             let buffer = JsFuture::from(blob.array_buffer())
@@ -364,7 +364,7 @@ pub fn get_clipboard_image() -> poll_promise::Promise<Result<Vec<u8>, String>> {
 fn get_clipboard_text() -> poll_promise::Promise<Result<String, String>> {
     use wasm_bindgen_futures::JsFuture;
     poll_promise::Promise::spawn_local(async {
-        let window = web_sys::window().ok_or("No window")?;
+        let window = eframe::web_sys::window().ok_or("No window")?;
 
         let clipboard = window.navigator().clipboard();
 
@@ -379,12 +379,12 @@ fn get_clipboard_text() -> poll_promise::Promise<Result<String, String>> {
 
 #[cfg(target_arch = "wasm32")]
 fn get_clipboard_file() -> poll_promise::Promise<Result<Vec<u8>, String>> {
+    use eframe::web_sys::wasm_bindgen::JsCast;
     use js_sys::Array;
     use js_sys::Uint8Array;
     use wasm_bindgen_futures::JsFuture;
-    use web_sys::wasm_bindgen::JsCast;
     poll_promise::Promise::spawn_local(async {
-        let window = web_sys::window().ok_or("No window")?;
+        let window = eframe::web_sys::window().ok_or("No window")?;
 
         let clipboard = window.navigator().clipboard();
 
@@ -399,7 +399,7 @@ fn get_clipboard_file() -> poll_promise::Promise<Result<Vec<u8>, String>> {
         }
 
         for i in 0..items.length() {
-            let item: web_sys::ClipboardItem = items.get(i).unchecked_into();
+            let item: eframe::web_sys::ClipboardItem = items.get(i).unchecked_into();
 
             let types = item.types();
             log::info!("Available types for clipboard paste: {:?}", types);
@@ -417,7 +417,7 @@ fn get_clipboard_file() -> poll_promise::Promise<Result<Vec<u8>, String>> {
             let blob = JsFuture::from(item.get_type(&mime))
                 .await
                 .map_err(|e| format!("{e:?}"))?
-                .dyn_into::<web_sys::Blob>()
+                .dyn_into::<eframe::web_sys::Blob>()
                 .map_err(|_| "Failed to cast Blob".to_string())?;
 
             let buffer = JsFuture::from(blob.array_buffer())

@@ -42,12 +42,12 @@ pub fn save_file(data: &[u8], path_file: &Path) -> Result<(), String> {
 
     let array_data = Array::new();
     array_data.push(&js_sys::Uint8Array::from(data));
-    let blob = web_sys::Blob::new_with_u8_array_sequence(&array_data)
+    let blob = eframe::web_sys::Blob::new_with_u8_array_sequence(&array_data)
         .map_err(|_| "Cannot create file data")?;
-    let url = web_sys::Url::create_object_url_with_blob(&blob)
+    let url = eframe::web_sys::Url::create_object_url_with_blob(&blob)
         .map_err(|_| "Cannot create file url data")?;
     // create link
-    let document = web_sys::window()
+    let document = eframe::web_sys::window()
         .ok_or("Cannot get the website window")?
         .document()
         .ok_or("Cannot get the website document")?;
@@ -60,11 +60,11 @@ pub fn save_file(data: &[u8], path_file: &Path) -> Result<(), String> {
         .map_err(|_| "Cannot create add download attribute")?;
 
     // click link
-    a.dyn_ref::<web_sys::HtmlElement>()
+    a.dyn_ref::<eframe::web_sys::HtmlElement>()
         .ok_or("Cannot simulate click")?
         .click();
     // revoke url
-    web_sys::Url::revoke_object_url(&url)
+    eframe::web_sys::Url::revoke_object_url(&url)
         .map_err(|_| "Cannot remove object url with revoke_object_url".into())
 }
 
