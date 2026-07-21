@@ -489,12 +489,7 @@ where
                 .start(
                     canvas,
                     web_options,
-                    Box::new(|cc| {
-                        Ok(Box::new(Bladvak::<M>::try_new_with_args(
-                            cc,
-                            &[],
-                        )))
-                    }),
+                    Box::new(|cc| Ok(Box::new(Bladvak::<M>::try_new_with_args(cc, &[])))),
                 )
                 .await;
 
