@@ -492,7 +492,7 @@ where
                     Box::new(|cc| {
                         Ok(Box::new(Bladvak::<M>::try_new_with_args(
                             cc,
-                            &["sqfd".to_string(), "sqfd".to_string()],
+                            &[],
                         )))
                     }),
                 )
