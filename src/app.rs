@@ -16,7 +16,9 @@ use crate::{
 /// App trait
 pub trait BladvakApp<'a>: Sized {
     /// Top panel ui
-    fn top_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager);
+    fn top_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
+
+    }
     /// Setting panel ui
     fn panel_list(&self) -> Vec<Box<dyn BladvakPanel<App = Self>>> {
         vec![]
@@ -47,9 +49,13 @@ pub trait BladvakApp<'a>: Sized {
     /// handle a file input
     /// # Errors
     /// Can return an error if fails to handle file
-    fn handle_file(&mut self, bytes: File) -> Result<(), AppError>;
+    fn handle_file(&mut self, _file: File) -> Result<(), AppError> {
+        Ok(())
+    }
     /// hook on the file menu
-    fn menu_file(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager);
+    fn menu_file(&mut self, _ui: &mut egui::Ui, _error_manager: &mut ErrorManager) {
+
+    }
     /// app name
     fn name() -> String;
     /// app version
@@ -63,7 +69,9 @@ pub trait BladvakApp<'a>: Sized {
     }
 
     /// should display a side panel
-    fn is_open_button(&self) -> bool;
+    fn is_open_button(&self) -> bool {
+        false
+    }
     /// should display a side panel
     fn is_side_panel(&self) -> bool {
         true
