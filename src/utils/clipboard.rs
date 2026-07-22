@@ -83,7 +83,6 @@ impl BladvakClipBoard {
         #[cfg(target_arch = "wasm32")]
         {
             if let Some(prom) = &self.promise_file {
-                // TODO await promise
                 match prom.ready() {
                     Some(Ok(file_data)) => {
                         let mut data = Vec::with_capacity(1);
