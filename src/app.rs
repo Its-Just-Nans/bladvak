@@ -16,9 +16,7 @@ use crate::{
 /// App trait
 pub trait BladvakApp<'a>: Sized {
     /// Top panel ui
-    fn top_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
-
-    }
+    fn top_panel(&mut self, _ui: &mut egui::Ui, _error_manager: &mut ErrorManager) {}
     /// Setting panel ui
     fn panel_list(&self) -> Vec<Box<dyn BladvakPanel<App = Self>>> {
         vec![]
@@ -53,9 +51,7 @@ pub trait BladvakApp<'a>: Sized {
         Ok(())
     }
     /// hook on the file menu
-    fn menu_file(&mut self, _ui: &mut egui::Ui, _error_manager: &mut ErrorManager) {
-
-    }
+    fn menu_file(&mut self, _ui: &mut egui::Ui, _error_manager: &mut ErrorManager) {}
     /// app name
     fn name() -> String;
     /// app version

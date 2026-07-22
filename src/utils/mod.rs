@@ -1,5 +1,6 @@
 //! utility functions
 
+use eframe::egui;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -128,4 +129,15 @@ pub fn set_image_in_clipboard(
     let color_image = ColorImage::from_rgba_unmultiplied(size, data);
     ctx.copy_image(color_image);
     Ok(())
+}
+
+/// Central ui
+pub fn central_ui(ui: &mut egui::Ui, inner_ui: impl FnOnce(&mut egui::Ui)) {
+    egui::Area::new("center".into())
+        .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
+        .show(ui.ctx(), |ui| {
+            ui.vertical_centered(|ui| {
+                inner_ui(ui);
+            });
+        });
 }
