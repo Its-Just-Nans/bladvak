@@ -4,7 +4,7 @@
 //! cargo run --example example_app
 //! ```
 
-use bladvak::app::{Bladvak, MainResult, BladvakApp};
+use bladvak::app::{Bladvak, BladvakApp, MainResult};
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Default)]
 pub struct ExampleApp {}

@@ -62,8 +62,9 @@ pub trait BladvakApp<'a>: Sized {
     /// app version
     fn version() -> String;
     /// repo URL - not displayed if empty
+    #[must_use]
     fn repo_url() -> String {
-        "".to_string()
+        String::new()
     }
     /// icon
     #[must_use]
