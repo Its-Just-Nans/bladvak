@@ -339,6 +339,23 @@ where
                     }
                     if self.app.panel_options_as_menu() && !self.internal.panel_state.is_empty() {
                         ui.menu_button("Panels", |ui| {
+                            ui.menu_button("All", |ui| {
+                                if ui.button(PanelOpen::AsSideBar.to_string()).clicked() {
+                                    for one_panel in &mut self.internal.panel_state {
+                                        one_panel.1.open = PanelOpen::AsSideBar;
+                                    }
+                                }
+                                if ui.button(PanelOpen::AsWindows.to_string()).clicked() {
+                                    for one_panel in &mut self.internal.panel_state {
+                                        one_panel.1.open = PanelOpen::AsWindows;
+                                    }
+                                }
+                                if ui.button(PanelOpen::None.to_string()).clicked() {
+                                    for one_panel in &mut self.internal.panel_state {
+                                        one_panel.1.open = PanelOpen::None;
+                                    }
+                                }
+                            });
                             for one_panel in &mut self.internal.panel_state {
                                 if let Some(panel) =
                                     self.panel_list.iter().find(|p| p.name() == one_panel.0)
