@@ -22,7 +22,12 @@ pub trait BladvakApp<'a>: Sized {
         vec![]
     }
     /// Central panel ui
-    fn central_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager);
+    fn central_panel(&mut self, ui: &mut egui::Ui, _error_manager: &mut ErrorManager) {
+        crate::utils::central_ui(ui, |ui| {
+            ui.heading("Welcome to baldvak");
+            ui.label("Use the BladvakApp trait to override function and customize the app");
+        });
+    }
     /// Side panel frame
     fn side_panel_frame(&mut self, ui: &mut egui::Ui) -> egui::Frame {
         egui::Frame::central_panel(&ui.ctx().global_style())
@@ -56,8 +61,10 @@ pub trait BladvakApp<'a>: Sized {
     fn name() -> String;
     /// app version
     fn version() -> String;
-    /// repo URL
-    fn repo_url() -> String;
+    /// repo URL - not displayed if empty
+    fn repo_url() -> String {
+        "".to_string()
+    }
     /// icon
     #[must_use]
     fn icon() -> &'a [u8] {
