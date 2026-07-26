@@ -40,3 +40,6 @@ pub use eframe::wasm_bindgen;
 pub use eframe::web_sys;
 #[cfg(target_arch = "wasm32")]
 pub use js_sys;
+
+/// re-export image
+pub use image;
