@@ -25,9 +25,6 @@ pub(crate) struct Settings {
     /// Is setting modal open
     pub open: bool,
 
-    /// Minimum width for the sidebar
-    pub min_width_sidebar: f32,
-
     /// Debug and inspection toggle
     pub show_inspection: bool,
 
@@ -40,7 +37,6 @@ impl Default for Settings {
         Self {
             show_inspection: false,
             open: false,
-            min_width_sidebar: 200.0,
             selected_setting: SelectedSetting::General,
         }
     }

@@ -84,7 +84,10 @@ pub trait BladvakApp<'a>: Sized {
     fn panel_options_as_menu(&self) -> bool {
         true
     }
-
+    /// Minimum sidebar width
+    fn min_width_sidebar(&self) -> f32 {
+        200.0
+    }
     /// Builder func for native
     ///
     /// This functions is called as native AND in web - use [`crate::utils::is_native`] to make conditional code
@@ -418,7 +421,7 @@ where
         }
         egui::Panel::right("my_panel")
             .frame(self.app.side_panel_frame(ui))
-            .min_size(self.internal.settings.min_width_sidebar)
+            .min_size(self.app.min_width_sidebar())
             .show(ui, |side_panel_ui| {
                 for (idx, one_panel) in self
                     .panel_list
