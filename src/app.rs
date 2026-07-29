@@ -86,7 +86,7 @@ pub trait BladvakApp<'a>: Sized {
     }
     /// Minimum sidebar width
     fn min_width_sidebar(&self) -> f32 {
-        200.0
+        0.0
     }
     /// Builder func for native
     ///
