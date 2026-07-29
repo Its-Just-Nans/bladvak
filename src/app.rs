@@ -316,6 +316,8 @@ where
                         let mut open = true;
                         egui::Window::new(panel_name)
                             .open(&mut open)
+                            // https://github.com/emilk/egui/pull/8353
+                            // .content_frame(egui::Frame::window(&ui.ctx().global_style()).inner_margin(0.0))
                             .frame(self.app.window_panel_frame(ui))
                             .show(ui.ctx(), |window_ui| {
                                 one_panel.ui(&mut self.app, window_ui, &mut self.error_manager);
