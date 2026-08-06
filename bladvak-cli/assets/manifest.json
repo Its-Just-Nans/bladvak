@@ -1,6 +1,6 @@
 {
-    "name": "BLADVAK_APP PWA",
-    "short_name": "BLADVAK_APP-pwa",
+    "name": "BLADVAK_APP",
+    "short_name": "BLADVAK_APP",
     "icons": [
         {
             "src": "./assets/icon-256.png",
