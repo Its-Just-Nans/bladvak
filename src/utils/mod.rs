@@ -141,3 +141,37 @@ pub fn central_ui(ui: &mut egui::Ui, inner_ui: impl FnOnce(&mut egui::Ui)) {
             });
         });
 }
+
+/// Show a size
+pub fn show_size(ui: &mut egui::Ui, size: usize) {
+    #[allow(clippy::cast_precision_loss)]
+    let size = size as f64;
+    let default_size = if size > (1000.0 * 1000.0) {
+        format!("Size: {:.3} MB", size / 1000.0 / 1000.0)
+    } else if size > 1000.0 {
+        format!("Size: {:.3} kB", size / 1000.0)
+    } else {
+        format!("Size: {size} bytes")
+    };
+    egui::CollapsingHeader::new(default_size)
+        .id_salt(format!("show_size_{size}"))
+        .show(ui, |ui| {
+            ui.label(format!("{size} bytes"));
+            egui::Grid::new(format!("show_size_table_{size}"))
+                .striped(true)
+                .show(ui, |ui| {
+                    ui.label("");
+                    ui.label("1000");
+                    ui.label("1024");
+                    ui.end_row();
+                    ui.label("1");
+                    ui.label(format!("{:.3} kB", size / 1000.0));
+                    ui.label(format!("{:.3} KiB", size / 1024.0));
+                    ui.end_row();
+                    ui.label("2");
+                    ui.label(format!("{:.3} MB", size /1000.0 / 1000.0));
+                    ui.label(format!("{:.3} MiB", size / 1024.0 / 1024.0));
+                    ui.end_row();
+                });
+        });
+}
