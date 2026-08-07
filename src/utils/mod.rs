@@ -160,17 +160,15 @@ pub fn show_size(ui: &mut egui::Ui, size: usize) {
             egui::Grid::new(format!("show_size_table_{size}"))
                 .striped(true)
                 .show(ui, |ui| {
-                    ui.label("");
-                    ui.label("1000");
-                    ui.label("1024");
+                    ui.label(format!("{:.3} kB", size / 1000.0))
+                        .on_hover_text("1000");
+                    ui.label(format!("{:.3} KiB", size / 1024.0))
+                        .on_hover_text("1024");
                     ui.end_row();
-                    ui.label("1");
-                    ui.label(format!("{:.3} kB", size / 1000.0));
-                    ui.label(format!("{:.3} KiB", size / 1024.0));
-                    ui.end_row();
-                    ui.label("2");
-                    ui.label(format!("{:.3} MB", size / 1000.0 / 1000.0));
-                    ui.label(format!("{:.3} MiB", size / 1024.0 / 1024.0));
+                    ui.label(format!("{:.3} MB", size / 1000.0 / 1000.0))
+                        .on_hover_text("1000^2");
+                    ui.label(format!("{:.3} MiB", size / 1024.0 / 1024.0))
+                        .on_hover_text("1024^2");
                     ui.end_row();
                 });
         });
