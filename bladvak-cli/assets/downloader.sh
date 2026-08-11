@@ -2,7 +2,11 @@
 # bladvak assets downloader
 
 repo="https://raw.githubusercontent.com/Its-Just-Nans/bladvak/main/bladvak-cli/assets"
-app_name="$(basename "$PWD")"
+if [ -n "$APP_NAME" ]; then
+    app_name="$APP_NAME"
+else
+    app_name="$(basename "$PWD")"
+fi
 
 if [ "$app_name" = "assets" ]; then
     echo "You are in the assets/ folder - exiting"
