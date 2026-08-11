@@ -7,6 +7,7 @@ if [ -n "$APP_NAME" ]; then
 else
     app_name="$(basename "$PWD")"
 fi
+echo "APP_NAME=$app_name"
 
 if [ "$app_name" = "assets" ]; then
     echo "You are in the assets/ folder - exiting"
