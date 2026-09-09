@@ -173,3 +173,20 @@ pub fn show_size(ui: &mut egui::Ui, size: usize) {
                 });
         });
 }
+
+/// custom collapsing
+pub fn custom_collapsing_header(
+    ui: &mut egui::Ui,
+    id: impl Into<egui::Id>,
+    ui_header: impl FnOnce(&mut egui::Ui),
+    ui_body: impl FnOnce(&mut egui::Ui),
+) {
+    let id = ui.make_persistent_id(id.into());
+    egui::collapsing_header::CollapsingState::load_with_default_open(ui.ctx(), id, true)
+        .show_header(ui, |ui| {
+            ui_header(ui);
+        })
+        .body(|ui| {
+            ui_body(ui);
+        });
+}
