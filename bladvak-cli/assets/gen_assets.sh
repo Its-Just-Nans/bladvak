@@ -47,7 +47,7 @@ gen_assets() {
 }
 
 if [ "$1" == "delete" ]; then
-    delete_assets
+    delete_assets "BLADVAK_APP"
 else
     gen_assets "BLADVAK_APP"
 fi
