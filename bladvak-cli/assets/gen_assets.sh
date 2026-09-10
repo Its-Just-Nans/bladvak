@@ -1,6 +1,17 @@
 #!/bin/bash
 
 APP_NAME="BLADVAK_APP"
+
+if [ "$1" == "delete" ]; then
+    rm icon_ios_touch_192.png
+    rm icon-256.png
+    rm icon-1024.png
+    rm maskable_icon_x512.png
+    rm favicon.ico
+    rm "$APP_NAME.png"
+    return
+fi
+
 if [ ! -f "icon_ios_touch_192.png" ]; then
     convert -background none "$APP_NAME.svg" -resize 192x192 icon_ios_touch_192.png
 fi
