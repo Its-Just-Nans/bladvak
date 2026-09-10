@@ -1,16 +1,15 @@
 #!/bin/bash
 
-gen_assets() {
-    if [ "$1" == "delete" ]; then
-        rm icon_ios_touch_192.png
-        rm icon-256.png
-        rm icon-1024.png
-        rm maskable_icon_x512.png
-        rm favicon.ico
-        rm "$1.png"
-        return 0
-    fi
+delete_assets() {
+    rm icon_ios_touch_192.png
+    rm icon-256.png
+    rm icon-1024.png
+    rm maskable_icon_x512.png
+    rm favicon.ico
+    rm "$1.png"
+}
 
+gen_assets() {
     if [ ! -f "icon_ios_touch_192.png" ]; then
         convert -background none "$1.svg" -resize 192x192 icon_ios_touch_192.png
     fi
@@ -47,7 +46,11 @@ gen_assets() {
     fi
 }
 
-gen_assets "BLADVAK_APP"
+if [ "$1" == "delete" ]; then
+    delete_assets
+else
+    gen_assets "BLADVAK_APP"
+fi
 
 # The line beneath this is called `modeline`. See `:help modeline`
 # vim: ts=4 sts=4 sw=4 et
