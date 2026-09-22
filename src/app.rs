@@ -673,14 +673,14 @@ where
 
         self.show_error_manager(ui);
         self.show_setting(ui, frame);
-        if let Some(recv) = &self.receiver {
-            if let Ok(file) = recv.try_recv() {
-                if let Err(err) = self.app.handle_file(file) {
-                    self.error_manager.add_error(err);
-                }
-                // repaint with the file
-                ui.ctx().request_repaint();
+        if let Some(recv) = &self.receiver
+            && let Ok(file) = recv.try_recv()
+        {
+            if let Err(err) = self.app.handle_file(file) {
+                self.error_manager.add_error(err);
             }
+            // repaint with the file
+            ui.ctx().request_repaint();
         }
     }
 }
