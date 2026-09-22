@@ -56,8 +56,10 @@ arboard = "3.6.1"
 wasm-bindgen-futures = "0.4"
 wasm-bindgen = "0.2.128"
 web-sys = { version = "0.3.105", features = [
-    "Url",
-] } # to access the DOM (to hide the loading text)
+    "Url", # to access the DOM (to hide the loading text)
+    "MessageEvent",
+    "console"
+] }
 js-sys = "0.3"
 
 [profile.release]

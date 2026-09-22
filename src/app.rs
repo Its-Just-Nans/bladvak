@@ -2,9 +2,12 @@
 
 use eframe::{CreationContext, egui};
 use serde::{Deserialize, Serialize};
+#[cfg(target_arch = "wasm32")]
+use std::sync::mpsc::Sender;
 use std::{
     collections::BTreeMap,
     fmt::{Debug, Display},
+    sync::mpsc::{Receiver, channel},
 };
 
 use crate::{
@@ -201,6 +204,10 @@ pub struct Bladvak<App> {
     /// panel list
     #[serde(skip)]
     pub(crate) panel_list: Vec<Box<dyn BladvakPanel<App = App>>>,
+
+    /// receiver
+    #[serde(skip)]
+    pub(crate) receiver: Option<Receiver<File>>,
 }
 
 /// Return type for [`Bladvak::bladvak_main`]
@@ -288,14 +295,84 @@ where
         if let Some(err) = creation_error {
             error_manager.add_error(err);
         }
+
+        let (sender, receiver) = channel();
+        #[cfg(target_arch = "wasm32")]
+        Self::setup_wasm_message(&mut error_manager, sender);
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let _ = sender;
+        }
+
         Self {
             app,
             internal: bladvak_internal,
             ignore_saved_state: false,
             error_manager,
             file_handler: FileHandler::default(),
+            receiver: Some(receiver),
             panel_list,
         }
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    fn setup_wasm_message(error_manager: &mut ErrorManager, sender: Sender<File>) {
+        use wasm_bindgen::JsCast;
+        use wasm_bindgen::prelude::*;
+        use web_sys::MessageEvent;
+
+        let window = web_sys::window().unwrap();
+        let callback = Closure::<dyn FnMut(MessageEvent)>::new(move |event: MessageEvent| {
+            let sender = sender.clone();
+
+            wasm_bindgen_futures::spawn_local(async move {
+                let data = event.data();
+                let Ok(blob) = js_sys::Reflect::get(&data, &JsValue::from_str("blob")) else {
+                    log::warn!("missing blob");
+                    return;
+                };
+                let Ok(blob) = blob.dyn_into::<web_sys::Blob>() else {
+                    log::warn!("blob is not a Blob");
+                    return;
+                };
+                let Ok(filename) = js_sys::Reflect::get(&data, &JsValue::from_str("filename"))
+                else {
+                    log::warn!("missing filename");
+                    return;
+                };
+                let Some(filename) = filename.as_string() else {
+                    log::warn!("filename is not not a string");
+                    return;
+                };
+
+                let array_buffer =
+                    match wasm_bindgen_futures::JsFuture::from(blob.array_buffer()).await {
+                        Ok(buffer) => buffer,
+                        Err(err) => {
+                            log::error!("Failed to read Blob: {:?}", err);
+                            return;
+                        }
+                    };
+
+                let bytes = js_sys::Uint8Array::new(&array_buffer).to_vec();
+
+                log::info!("Received {} bytes", bytes.len());
+
+                let _ = sender.send(File {
+                    data: bytes,
+                    path: std::path::PathBuf::from(filename),
+                });
+            });
+        });
+
+        if let Err(_err) =
+            window.add_event_listener_with_callback("message", callback.as_ref().unchecked_ref())
+        {
+            error_manager.add_error("Cannot add listener");
+        }
+
+        // Keep the closure alive.
+        callback.forget();
     }
 
     /// Show the central panel
@@ -596,5 +673,14 @@ where
 
         self.show_error_manager(ui);
         self.show_setting(ui, frame);
+        if let Some(recv) = &self.receiver {
+            if let Ok(file) = recv.try_recv() {
+                if let Err(err) = self.app.handle_file(file) {
+                    self.error_manager.add_error(err);
+                }
+                // repaint with the file
+                ui.ctx().request_repaint();
+            }
+        }
     }
 }
