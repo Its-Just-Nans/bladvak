@@ -2,7 +2,7 @@
 
 use eframe::egui;
 use poll_promise::Promise;
-use std::{fmt::Debug, fs::read, path::PathBuf};
+use std::{fmt::Debug, path::PathBuf, sync::Arc};
 
 use crate::errors::AppError;
 
@@ -20,7 +20,7 @@ pub struct File {
 pub struct FileHandler {
     /// Dropped files handler
     #[serde(skip)]
-    pub dropped_files: Vec<egui::DroppedFile>,
+    pub dropped_files: Vec<Arc<dyn egui::DroppedFile + Send + Sync>>,
 
     /// File upload handling
     #[serde(skip)]
@@ -105,40 +105,69 @@ impl FileHandler {
     }
 
     /// Handle file dropped
-    fn handle_file_dropped(&mut self) -> Result<Option<File>, AppError> {
+    fn handle_file_dropped(&mut self, ctx: &egui::Context) {
+        ctx.input(|i| {
+            for one_file in &i.raw.dropped_files {
+                self.dropped_files.push(one_file.clone());
+            }
+        });
         if self.dropped_files.is_empty() {
-            return Ok(None);
+            return;
         }
         let file = self.dropped_files.remove(0);
-        if cfg!(not(target_arch = "wasm32")) {
-            if let Some(path) = file.path.as_deref() {
-                let file = read(path)?;
-                return Ok(Some(File {
-                    data: file,
-                    path: path.to_path_buf(),
-                }));
-            }
-        } else if cfg!(target_arch = "wasm32")
-            && let Some(bytes) = file.bytes.as_deref()
+        #[cfg(not(target_arch = "wasm32"))]
         {
-            return Ok(Some(File {
-                data: bytes.to_vec(),
-                path: file.path.unwrap_or(PathBuf::from(file.name)),
+            self.file_upload = Some(Promise::spawn_thread("slow", move || {
+                let path = file.path();
+                let buf = std::fs::read(path);
+                let buf = match buf {
+                    Ok(v) => v,
+                    Err(e) => {
+                        log::warn!("{e:?}");
+                        return Err(AppError::new(e.to_string()));
+                    }
+                };
+                Ok(FileState::Ready(File {
+                    data: buf,
+                    path: path.to_path_buf(),
+                }))
             }));
         }
-        Ok(None)
+        #[cfg(target_arch = "wasm32")]
+        {
+            self.file_upload = Some(Promise::spawn_local(async move {
+                let path = file.path();
+                if let Ok(buf) = file.bytes_async().await {
+                    return Ok(FileState::Ready(File {
+                        data: buf,
+                        path: path.to_path_buf(),
+                    }));
+                }
+                // no file selected
+                Ok(FileState::NotSelected)
+            }));
+        }
+        // if cfg!(not(target_arch = "wasm32")) {
+        //     let path = file.path();
+        //     let file = read(path)?;
+        //     return Ok(Some(File {
+        //         data: file,
+        //         path: path.to_path_buf(),
+        //     }));
+        // } else if cfg!(target_arch = "wasm32")
+        //     && let Some(bytes) = file.bytes.as_deref()
+        // {
+        //     return Ok(Some(File {
+        //         data: bytes.to_vec(),
+        //         path: file.path.unwrap_or(PathBuf::from(file.name)),
+        //     }));
+        // }
     }
 
     /// Handle the files
     /// # Errors
     /// Can return an error if fails to handle files
     pub fn handle_files(&mut self, ctx: &egui::Context) -> Result<Option<File>, AppError> {
-        ctx.input(|i| {
-            if !i.raw.dropped_files.is_empty() {
-                // read the first file
-                self.dropped_files.clone_from(&i.raw.dropped_files);
-            }
-        });
         let file_upload_state = match &self.file_upload {
             Some(result) => match result.ready() {
                 Some(Ok(state)) => Ok(state.clone()),
@@ -172,9 +201,7 @@ impl FileHandler {
                 return Err(e);
             }
         }
-        if let Some(file_dropped) = self.handle_file_dropped()? {
-            return Ok(Some(file_dropped));
-        }
+        self.handle_file_dropped(ctx);
         Ok(None)
     }
 }
