@@ -5,6 +5,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use crate::AppError;
+use crate::ErrorManager;
 
 pub mod clipboard;
 pub mod document;
@@ -189,4 +190,87 @@ pub fn custom_collapsing_header(
         .body(|ui| {
             ui_body(ui);
         });
+}
+
+/// open external
+#[cfg(target_arch = "wasm32")]
+pub fn open_external(
+    data: Vec<u8>,
+    filename: &Path,
+    error_manager: &mut ErrorManager,
+    target: &str,
+) {
+    use wasm_bindgen::{JsCast, JsValue, closure::Closure};
+    use {js_sys, web_sys};
+    let target = target.to_string();
+
+    let Some(window) = web_sys::window() else {
+        error_manager.add_error("Cannot create window");
+        return;
+    };
+
+    let parts = js_sys::Array::new();
+    let bytes = js_sys::Uint8Array::from(data.as_slice());
+    parts.push(&bytes);
+
+    let options = web_sys::BlobPropertyBag::new();
+    options.set_type("application/octet-stream");
+
+    let Ok(blob) = web_sys::Blob::new_with_str_sequence_and_options(&parts, &options) else {
+        error_manager.add_error("Cannot create blob");
+        return;
+    };
+
+    // Open Tab B
+    let Ok(res_tab) = window.open_with_url_and_target(&target, "_blank") else {
+        error_manager.add_error("Cannot open URL");
+        return;
+    };
+
+    let Some(tab_b) = res_tab else {
+        error_manager.add_error("Cannot get WindowProxy");
+        return;
+    };
+
+    let message = js_sys::Object::new();
+
+    if let Err(_err) = js_sys::Reflect::set(&message, &JsValue::from_str("blob"), &blob) {
+        error_manager.add_error("Cannot had blob to message");
+        return;
+    };
+    if let Err(_err) = js_sys::Reflect::set(
+        &message,
+        &JsValue::from_str("filename"),
+        &JsValue::from_str(&filename.to_string_lossy().to_string()),
+    ) {
+        error_manager.add_error("Cannot had filename to message");
+        return;
+    };
+    let callback = Closure::once(move || {
+        // Send to Tab B
+        if let Err(_err) = tab_b.post_message(&message, &target) {
+            return;
+        }
+    });
+
+    if let Err(_err) = window.set_timeout_with_callback_and_timeout_and_arguments_0(
+        callback.as_ref().unchecked_ref(),
+        1500,
+    ) {
+        error_manager.add_error("Cannot set timeout");
+        return;
+    };
+
+    callback.forget();
+}
+
+/// open external
+#[cfg(not(target_arch = "wasm32"))]
+pub fn open_external(
+    _data: Vec<u8>,
+    _filename: &Path,
+    _error_manager: &mut ErrorManager,
+    _target: &str,
+) {
+    // TODO:
 }
