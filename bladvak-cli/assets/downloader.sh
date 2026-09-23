@@ -16,8 +16,8 @@ fi
 
 mkdir -p .github/workflows
 for file in pages.yml release.yml rust.yml typos.yml; do
-    curl -L -o ".github/workflows/$file" \
-    "$repo/$file"
+    echo "$repo/$file"
+    curl -L -o ".github/workflows/$file" "$repo/$file"
 done
 
 curl -L -O "$repo/Trunk.toml"
