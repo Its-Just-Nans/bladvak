@@ -2,11 +2,11 @@
 
 use std::{
     fmt::{Debug, Display},
-    path::Path,
+    path::{Path, PathBuf},
     slice::{Iter, IterMut},
 };
 
-use eframe::egui;
+use eframe::egui::{self, Id, Modal};
 
 /// Document trait
 pub trait DocumentTrait {
@@ -21,6 +21,18 @@ pub trait DocumentTrait {
 
     /// Get the path of the document
     fn path(&self) -> &Path;
+
+    /// Get the mut path of the document
+    fn set_path(&mut self, new_path: PathBuf);
+}
+
+/// change name modal
+#[derive(serde::Deserialize, serde::Serialize, Debug, Default)]
+pub(crate) struct ChangeNameModal {
+    /// current name
+    current_name: String,
+    /// index
+    index: usize,
 }
 
 /// Documents
@@ -30,6 +42,10 @@ pub struct Documents<D> {
     pub(crate) current_idx: usize,
     /// documents
     inner: Vec<D>,
+
+    /// modal
+    #[serde(skip)]
+    pub(crate) change_name_modal: Option<ChangeNameModal>,
 }
 
 impl<D> Documents<D> {
@@ -142,7 +158,19 @@ where
 
         for (idx, one_doc) in self.inner.iter().enumerate() {
             ui.horizontal(|ui| {
-                ui.selectable_value(&mut current_idx, idx, format!("{}", one_doc.name()));
+                ui.selectable_value(&mut current_idx, idx, format!("{}", one_doc.name()))
+                    .context_menu(|ui| {
+                        if ui.button("Change name").clicked() {
+                            self.change_name_modal = Some(ChangeNameModal {
+                                current_name: one_doc.path().to_string_lossy().to_string(),
+                                index: current_idx,
+                            });
+                        }
+
+                        if ui.button("Close").clicked() {
+                            to_remove = Some(idx);
+                        }
+                    });
                 if ui.button("x").clicked() {
                     to_remove = Some(idx);
                 }
@@ -152,6 +180,50 @@ where
         self.current_idx = current_idx;
         if let Some(index) = to_remove {
             self.remove(index);
+        }
+        self.show_modal_name(ui);
+    }
+
+    /// show modal name edition
+    fn show_modal_name(&mut self, ui: &mut egui::Ui) {
+        let mut new_name = None;
+        let mut should_close = false;
+        if let Some(modal) = &mut self.change_name_modal {
+            let modal = Modal::new(Id::new("Modal new image")).show(ui.ctx(), |ui| {
+                ui.label("Create a new image");
+                ui.horizontal(|ui| {
+                    ui.label("Width");
+                    ui.text_edit_singleline(&mut modal.current_name);
+                });
+                egui::Sides::new().show(
+                    ui,
+                    |modal_ui| {
+                        if modal_ui.button("Cancel").clicked() {
+                            should_close = true;
+                            modal_ui.close();
+                        }
+                    },
+                    |modal_ui| {
+                        if modal_ui.button("Edit").clicked() {
+                            new_name = Some((modal.index, modal.current_name.clone()));
+                            modal_ui.close();
+                        }
+                    },
+                );
+            });
+            if modal.should_close() {
+                should_close = true;
+            }
+        }
+        if let Some((idx, name)) = new_name {
+            let Some(document) = self.get_mut(idx) else {
+                return;
+            };
+            document.set_path(PathBuf::from(name));
+            should_close = true;
+        }
+        if should_close {
+            self.change_name_modal = None;
         }
     }
 }
