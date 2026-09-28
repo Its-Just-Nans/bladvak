@@ -30,6 +30,7 @@ sed -i "s/BLADVAK_APP/$app_name/g" index.html
 
 mkdir -p assets
 curl -L -o "assets/sw.js" "$repo/sw.js"
+curl -L -o "assets/initializer.mjs" "$repo/initializer.mjs"
 curl -L -o "assets/manifest.json" "$repo/manifest.json"
 sed -i "s/BLADVAK_APP/$app_name/g" assets/sw.js
 sed -i "s/BLADVAK_APP/$app_name/g" assets/manifest.json
