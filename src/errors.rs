@@ -116,6 +116,9 @@ pub struct ErrorManager {
 
     /// Check if it was open
     pub(crate) was_open: bool,
+
+    /// Debug
+    pub(crate) debug: bool,
 }
 
 impl ErrorManager {
@@ -147,5 +150,11 @@ impl ErrorManager {
     /// Clears errors
     pub fn clear(&mut self) {
         self.errors.clear();
+    }
+
+    /// Is debug
+    #[must_use]
+    pub fn is_debug(&self) -> bool {
+        self.debug
     }
 }
