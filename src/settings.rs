@@ -244,10 +244,7 @@ where
             });
         });
         ui.checkbox(&mut self.error_manager.is_open, "Show Error panel");
-        ui.checkbox(
-            &mut self.error_manager.debug,
-            "Debug app",
-        );
+        ui.checkbox(&mut self.error_manager.debug, "Debug app");
         ui.checkbox(
             &mut self.internal.settings.show_inspection,
             "Show Debug panel",
