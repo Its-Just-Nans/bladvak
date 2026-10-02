@@ -24,6 +24,10 @@ pub trait DocumentTrait {
 
     /// Get the mut path of the document
     fn set_path(&mut self, new_path: PathBuf);
+
+    /// Deep clone the content - to duplicate the document
+    #[must_use]
+    fn deep_clone(&self) -> Self;
 }
 
 /// change name modal
@@ -155,6 +159,7 @@ where
     pub fn show_file_list(&mut self, ui: &mut egui::Ui) {
         let mut current_idx = self.current_idx;
         let mut to_remove = None;
+        let mut to_duplicate = None;
 
         for (idx, one_doc) in self.inner.iter().enumerate() {
             ui.horizontal(|ui| {
@@ -163,8 +168,11 @@ where
                         if ui.button("Change name").clicked() {
                             self.change_name_modal = Some(ChangeNameModal {
                                 current_name: one_doc.path().to_string_lossy().to_string(),
-                                index: current_idx,
+                                index: idx,
                             });
+                        }
+                        if ui.button("Duplicate").clicked() {
+                            to_duplicate = Some(idx);
                         }
 
                         if ui.button("Close").clicked() {
@@ -178,6 +186,12 @@ where
             ui.separator();
         }
         self.current_idx = current_idx;
+        if let Some(index) = to_duplicate
+            && let Some(doc) = self.get(index)
+        {
+            let new_doc = doc.deep_clone();
+            self.inner.push(new_doc);
+        }
         if let Some(index) = to_remove {
             self.remove(index);
         }
@@ -190,9 +204,9 @@ where
         let mut should_close = false;
         if let Some(modal) = &mut self.change_name_modal {
             let modal = Modal::new(Id::new("Modal new image")).show(ui.ctx(), |ui| {
-                ui.label("Create a new image");
+                ui.label("Edit filename");
                 ui.horizontal(|ui| {
-                    ui.label("Width");
+                    ui.label("Name");
                     ui.text_edit_singleline(&mut modal.current_name);
                 });
                 egui::Sides::new().show(
