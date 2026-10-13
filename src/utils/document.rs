@@ -100,6 +100,18 @@ impl<D> Documents<D> {
         Some(&mut self.inner[idx])
     }
 
+    /// len of documents
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.inner.len()
+    }
+
+    /// is empty
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
     /// add a new document
     pub fn push(&mut self, document: D) {
         self.inner.push(document);
