@@ -502,32 +502,34 @@ where
             .frame(self.app.side_panel_frame(ui))
             .min_size(self.app.min_width_sidebar())
             .show(ui, |side_panel_ui| {
-                for (idx, one_panel) in self
-                    .panel_list
-                    .iter()
-                    .filter(|p| {
-                        p.has_ui()
-                            && self
-                                .internal
-                                .panel_state
-                                .get(p.name())
-                                .is_some_and(|p_state| p_state.open == PanelOpen::AsSideBar)
-                    })
-                    .enumerate()
-                {
-                    if idx != 0 {
-                        side_panel_ui.separator();
+                egui::ScrollArea::vertical().show(side_panel_ui, |ui| {
+                    for (idx, one_panel) in self
+                        .panel_list
+                        .iter()
+                        .filter(|p| {
+                            p.has_ui()
+                                && self
+                                    .internal
+                                    .panel_state
+                                    .get(p.name())
+                                    .is_some_and(|p_state| p_state.open == PanelOpen::AsSideBar)
+                        })
+                        .enumerate()
+                    {
+                        if idx != 0 {
+                            ui.separator();
+                        }
+                        self.app.side_panel(ui, |ui, app| {
+                            one_panel.ui(app, ui, &mut self.error_manager);
+                        });
                     }
-                    self.app.side_panel(side_panel_ui, |ui, app| {
-                        one_panel.ui(app, ui, &mut self.error_manager);
-                    });
-                }
-                side_panel_ui.with_layout(
-                    egui::Layout::bottom_up(egui::Align::RIGHT),
-                    |ui: &mut egui::Ui| {
-                        egui::warn_if_debug_build(ui);
-                    },
-                );
+                    ui.with_layout(
+                        egui::Layout::bottom_up(egui::Align::RIGHT),
+                        |ui: &mut egui::Ui| {
+                            egui::warn_if_debug_build(ui);
+                        },
+                    );
+                });
             });
     }
 

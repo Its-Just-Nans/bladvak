@@ -52,7 +52,7 @@ where
             self.error_manager.is_open = true;
         }
         egui::Window::new("Errors")
-            .id("bladvak_errors_windows".into())
+            .id(Id::unique("bladvak_errors_windows"))
             .open(&mut self.error_manager.is_open)
             .vscroll(true)
             .show(ctx, |ui| {
@@ -181,7 +181,7 @@ where
     pub fn show_setting(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
         let mut show_inspection = self.internal.settings.show_inspection;
         egui::Window::new("Inspection")
-            .id("bladvak_inspection_windows".into())
+            .id(Id::unique("bladvak_inspection_windows"))
             .open(&mut show_inspection)
             .vscroll(true)
             .show(ctx, |ui| {
@@ -191,7 +191,7 @@ where
             });
         self.internal.settings.show_inspection = show_inspection;
         if self.internal.settings.open {
-            let modal = Modal::new(Id::new("Modal settings")).show(ctx, |ui| {
+            let modal = Modal::new(Id::unique("bladvak_modal_settings")).show(ctx, |ui| {
                 self.show_settings_modal(ui, frame);
             });
             if modal.should_close() {

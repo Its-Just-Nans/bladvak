@@ -1,6 +1,7 @@
 //! utility functions
 
 use eframe::egui;
+use eframe::egui::Id;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -134,7 +135,7 @@ pub fn set_image_in_clipboard(
 
 /// Central ui
 pub fn central_ui(ui: &mut egui::Ui, inner_ui: impl FnOnce(&mut egui::Ui)) {
-    egui::Area::new("center".into())
+    egui::Area::new(Id::unique("bladvak_center_ui"))
         .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
         .show(ui.ctx(), |ui| {
             ui.vertical_centered(|ui| {

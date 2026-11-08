@@ -215,7 +215,7 @@ where
         let mut new_name = None;
         let mut should_close = false;
         if let Some(modal) = &mut self.change_name_modal {
-            let modal = Modal::new(Id::new("Modal new image")).show(ui.ctx(), |ui| {
+            let modal = Modal::new(Id::unique("bladvak_modal_edit_name")).show(ui.ctx(), |ui| {
                 ui.label("Edit filename");
                 ui.horizontal(|ui| {
                     ui.label("Name");
