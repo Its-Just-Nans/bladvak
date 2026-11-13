@@ -19,13 +19,22 @@ use crate::{
 /// App trait
 pub trait BladvakApp<'a>: Sized {
     /// Top panel ui
-    fn top_panel(&mut self, _ui: &mut egui::Ui, _error_manager: &mut ErrorManager) {}
+    fn top_panel(
+        &mut self,
+        #[allow(unused)] ui: &mut egui::Ui,
+        #[allow(unused)] error_manager: &mut ErrorManager,
+    ) {
+    }
     /// Setting panel ui
     fn panel_list(&self) -> Vec<Box<dyn BladvakPanel<App = Self>>> {
         vec![]
     }
     /// Central panel ui
-    fn central_panel(&mut self, ui: &mut egui::Ui, _error_manager: &mut ErrorManager) {
+    fn central_panel(
+        &mut self,
+        ui: &mut egui::Ui,
+        #[allow(unused)] error_manager: &mut ErrorManager,
+    ) {
         crate::utils::central_ui(ui, |ui| {
             ui.heading("Welcome to baldvak");
             ui.label("Use the BladvakApp trait to override function and customize the app");
@@ -55,11 +64,20 @@ pub trait BladvakApp<'a>: Sized {
     /// handle a file input
     /// # Errors
     /// Can return an error if fails to handle file
-    fn handle_file(&mut self, _file: File) -> Result<(), AppError> {
+    fn handle_file(
+        &mut self,
+        #[allow(unused)] file: File,
+        #[allow(unused)] error_manager: &mut ErrorManager,
+    ) -> Result<(), AppError> {
         Ok(())
     }
     /// hook on the file menu
-    fn menu_file(&mut self, _ui: &mut egui::Ui, _error_manager: &mut ErrorManager) {}
+    fn menu_file(
+        &mut self,
+        #[allow(unused)] ui: &mut egui::Ui,
+        #[allow(unused)] error_manager: &mut ErrorManager,
+    ) {
+    }
     /// app name
     fn name() -> String;
     /// app version
@@ -659,7 +677,7 @@ where
 
         match self.file_handler.handle_files(ui) {
             Ok(Some(file)) => {
-                if let Err(err) = self.app.handle_file(file) {
+                if let Err(err) = self.app.handle_file(file, &mut self.error_manager) {
                     self.error_manager.add_error(err);
                 }
                 // repaint with the file
@@ -678,7 +696,7 @@ where
         if let Some(recv) = &self.receiver
             && let Ok(file) = recv.try_recv()
         {
-            if let Err(err) = self.app.handle_file(file) {
+            if let Err(err) = self.app.handle_file(file, &mut self.error_manager) {
                 self.error_manager.add_error(err);
             }
             // repaint with the file
