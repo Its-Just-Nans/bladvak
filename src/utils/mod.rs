@@ -268,10 +268,38 @@ pub fn open_external(
 /// open external
 #[cfg(not(target_arch = "wasm32"))]
 pub fn open_external(
-    _data: Vec<u8>,
-    _filename: &Path,
-    _error_manager: &mut ErrorManager,
-    _target: &str,
+    data: Vec<u8>,
+    filename: &Path,
+    error_manager: &mut ErrorManager,
+    target: &str,
 ) {
-    // TODO:
+    let program_name = match target {
+        "https://tarsier.n4n5.dev" => "tarsier",
+        "https://galago.n4n5.dev" => "galago",
+        "https://wombat.n4n5.dev" => "wombat",
+        _ => {
+            error_manager.add_error("Openning in external program failed: no program");
+            return;
+        }
+    };
+    let temp_file_name = std::env::temp_dir().join(
+        filename
+            .file_name()
+            .unwrap_or_else(|| std::ffi::OsStr::new("._tempfile")),
+    );
+    let exists = std::fs::exists(&temp_file_name);
+    if exists.is_err() || exists.is_ok_and(|b| b) {
+        error_manager.add_error("Openning in external program failed: temp file already exists");
+        return;
+    }
+    if let Err(_err) = std::fs::write(&temp_file_name, data) {
+        error_manager.add_error("Openning in external program failed: cannot write temp file");
+        return;
+    }
+    if let Err(err) = std::process::Command::new("tarsier")
+        .arg(temp_file_name)
+        .spawn()
+    {
+        error_manager.add_error(format!("Failed to open to {program_name}: {err}"));
+    }
 }
