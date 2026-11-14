@@ -278,7 +278,7 @@ pub fn open_external(
         "https://galago.n4n5.dev" => "galago",
         "https://wombat.n4n5.dev" => "wombat",
         _ => {
-            error_manager.add_error("Openning in external program failed: no program");
+            error_manager.add_error("Opening in external program failed: no program");
             return;
         }
     };
@@ -289,11 +289,11 @@ pub fn open_external(
     );
     let exists = std::fs::exists(&temp_file_name);
     if exists.is_err() || exists.is_ok_and(|b| b) {
-        error_manager.add_error("Openning in external program failed: temp file already exists");
+        error_manager.add_error("Opening in external program failed: temp file already exists");
         return;
     }
     if let Err(_err) = std::fs::write(&temp_file_name, data) {
-        error_manager.add_error("Openning in external program failed: cannot write temp file");
+        error_manager.add_error("Opening in external program failed: cannot write temp file");
         return;
     }
     if let Err(err) = std::process::Command::new("tarsier")
