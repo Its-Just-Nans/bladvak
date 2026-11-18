@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 #[cfg(target_arch = "wasm32")]
 use std::sync::mpsc::Sender;
 use std::{
-    collections::BTreeMap,
     fmt::{Debug, Display},
     sync::mpsc::{Receiver, channel},
 };
@@ -34,6 +33,7 @@ pub trait BladvakApp<'a>: Sized {
         &mut self,
         ui: &mut egui::Ui,
         #[allow(unused)] error_manager: &mut ErrorManager,
+        #[allow(unused)] panel_list: &mut [Box<dyn BladvakPanel<App = Self>>],
     ) {
         crate::utils::central_ui(ui, |ui| {
             ui.heading("Welcome to baldvak");
@@ -98,7 +98,10 @@ pub trait BladvakApp<'a>: Sized {
         false
     }
     /// should display a side panel
-    fn is_side_panel(&self) -> bool {
+    fn is_side_panel(
+        &self,
+        #[allow(unused)] panel_list: &mut [Box<dyn BladvakPanel<App = Self>>],
+    ) -> bool {
         true
     }
     /// panels options
@@ -133,6 +136,12 @@ pub trait BladvakPanel: Debug {
 
     /// Name of the panel
     fn name(&self) -> &str;
+
+    /// Get the state
+    fn state(&self) -> &PanelState;
+
+    /// Get the state mut
+    fn state_mut(&mut self) -> &mut PanelState;
 
     /// Does this panel has a setting ui
     fn has_settings(&self) -> bool;
@@ -191,12 +200,10 @@ pub struct PanelState {
 }
 
 /// Bladvak internal saved state
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct BladvakSavedState {
     /// settings
     pub(crate) settings: Settings,
-    /// Panel state
-    pub(crate) panel_state: BTreeMap<String, PanelState>,
 }
 
 /// App wrapper
@@ -262,54 +269,7 @@ where
                 Err(err) => (M::default(), Some(err)),
             };
         let panel_list = app.panel_list();
-        let bladvak_internal = if let Some(saved_state) = saved_internal {
-            let hashet_saved = saved_state
-                .panel_state
-                .iter()
-                .map(|p| p.0.as_str())
-                .collect::<std::collections::HashSet<_>>();
-            let hashet_current = panel_list
-                .iter()
-                .map(|p| p.name())
-                .collect::<std::collections::HashSet<_>>();
-            if hashet_saved == hashet_current {
-                // maybe add a check on the key of the panel_list
-                log::info!("Using saved panels state");
-                saved_state
-            } else {
-                // new state with old panel
-                let BladvakSavedState {
-                    settings: old_settings,
-                    panel_state: old_panel_state,
-                } = saved_state;
-                log::info!("Trying to use old saved panels state");
-                let mut new_panel_state = BTreeMap::new();
-                for one_panel in &panel_list {
-                    let is_panel_present = old_panel_state
-                        .iter()
-                        .find(|panel| panel.0 == one_panel.name());
-                    if let Some(saved_panel_state) = is_panel_present {
-                        new_panel_state
-                            .insert(one_panel.name().to_string(), saved_panel_state.1.clone());
-                    } else {
-                        new_panel_state.insert(one_panel.name().to_string(), PanelState::default());
-                    }
-                }
-                BladvakSavedState {
-                    settings: old_settings,
-                    panel_state: new_panel_state,
-                }
-            }
-        } else {
-            let mut panel_state = BTreeMap::new();
-            for one_panel in &panel_list {
-                panel_state.insert(one_panel.name().to_string(), PanelState::default());
-            }
-            BladvakSavedState {
-                settings: Settings::default(),
-                panel_state,
-            }
-        };
+        let bladvak_internal = saved_internal.unwrap_or_default();
         if let Some(err) = creation_error {
             error_manager.add_error(err);
         }
@@ -402,13 +362,12 @@ where
                     .outer_margin(0),
             )
             .show(ui, |ui| {
-                self.app.central_panel(ui, &mut self.error_manager);
-                for one_panel in self.panel_list.iter().filter(|p| p.has_ui()) {
-                    let panel_name = one_panel.name();
-                    if let Some(panel_state) = self.internal.panel_state.get_mut(panel_name)
-                        && let PanelOpen::AsWindows = panel_state.open
-                    {
+                self.app
+                    .central_panel(ui, &mut self.error_manager, &mut self.panel_list);
+                for one_panel in self.panel_list.iter_mut().filter(|p| p.has_ui()) {
+                    if one_panel.state().open == PanelOpen::AsWindows {
                         let mut open = true;
+                        let panel_name = one_panel.name();
                         egui::Window::new(panel_name)
                             .open(&mut open)
                             // https://github.com/emilk/egui/pull/8353
@@ -418,7 +377,7 @@ where
                                 one_panel.ui(&mut self.app, window_ui, &mut self.error_manager);
                             });
                         if !open {
-                            panel_state.open = PanelOpen::AsSideBar;
+                            one_panel.state_mut().open = PanelOpen::AsSideBar;
                         }
                     }
                 }
@@ -437,39 +396,33 @@ where
                         ui.close();
                         self.file_handler.handle_file_open();
                     }
-                    if self.app.panel_options_as_menu() && !self.internal.panel_state.is_empty() {
+                    if self.app.panel_options_as_menu() && !self.panel_list.is_empty() {
                         ui.menu_button("Panels", |ui| {
                             ui.menu_button("All", |ui| {
                                 if ui.button(PanelOpen::AsSideBar.to_string()).clicked() {
-                                    for one_panel in &mut self.internal.panel_state {
-                                        one_panel.1.open = PanelOpen::AsSideBar;
+                                    for one_panel in &mut self.panel_list {
+                                        one_panel.state_mut().open = PanelOpen::AsSideBar;
                                     }
                                 }
                                 if ui.button(PanelOpen::AsWindows.to_string()).clicked() {
-                                    for one_panel in &mut self.internal.panel_state {
-                                        one_panel.1.open = PanelOpen::AsWindows;
+                                    for one_panel in &mut self.panel_list {
+                                        one_panel.state_mut().open = PanelOpen::AsWindows;
                                     }
                                 }
                                 if ui.button(PanelOpen::None.to_string()).clicked() {
-                                    for one_panel in &mut self.internal.panel_state {
-                                        one_panel.1.open = PanelOpen::None;
+                                    for one_panel in &mut self.panel_list {
+                                        one_panel.state_mut().open = PanelOpen::None;
                                     }
                                 }
                             });
-                            for one_panel in &mut self.internal.panel_state {
-                                if let Some(panel) =
-                                    self.panel_list.iter().find(|p| p.name() == one_panel.0)
-                                {
-                                    // Check if plugin has a UI
-                                    if !panel.has_ui() {
-                                        continue;
-                                    }
-                                } else {
-                                    // Plugin not found - weird
+                            for one_panel in &mut self.panel_list {
+                                // Check if plugin has a UI
+                                if !one_panel.has_ui() {
                                     continue;
                                 }
-                                ui.menu_button(one_panel.0, |ui| {
-                                    let value = &mut one_panel.1.open;
+                                let menu_name = one_panel.name().to_string();
+                                ui.menu_button(menu_name, |ui| {
+                                    let value = &mut one_panel.state_mut().open;
                                     ui.selectable_value(
                                         value,
                                         PanelOpen::AsSideBar,
@@ -505,14 +458,10 @@ where
 
     /// Show the side panel
     pub(crate) fn side_panel(&mut self, ui: &mut egui::Ui) {
-        let is_panels_in_sidebar = self.panel_list.iter().any(|p| {
-            p.has_ui()
-                && self
-                    .internal
-                    .panel_state
-                    .get(p.name())
-                    .is_some_and(|p_state| p_state.open == PanelOpen::AsSideBar)
-        });
+        let is_panels_in_sidebar = self
+            .panel_list
+            .iter()
+            .any(|p| p.has_ui() && p.state().open == PanelOpen::AsSideBar);
         if !is_panels_in_sidebar {
             return;
         }
@@ -524,14 +473,7 @@ where
                     for (idx, one_panel) in self
                         .panel_list
                         .iter()
-                        .filter(|p| {
-                            p.has_ui()
-                                && self
-                                    .internal
-                                    .panel_state
-                                    .get(p.name())
-                                    .is_some_and(|p_state| p_state.open == PanelOpen::AsSideBar)
-                        })
+                        .filter(|p| p.has_ui() && p.state().open == PanelOpen::AsSideBar)
                         .enumerate()
                     {
                         if idx != 0 {
@@ -669,7 +611,7 @@ where
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         self.top_panel(ui);
 
-        if self.app.is_side_panel() {
+        if self.app.is_side_panel(&mut self.panel_list) {
             self.side_panel(ui);
         }
 

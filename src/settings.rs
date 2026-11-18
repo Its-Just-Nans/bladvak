@@ -203,23 +203,21 @@ where
     /// Show setting of selected
     pub(crate) fn show_panel_setting(&mut self, ui: &mut egui::Ui) {
         ui.heading("Panels");
-        for one_panel in &self.panel_list {
+        let is_side_panel = self.app.is_side_panel(&mut self.panel_list);
+        for one_panel in &mut self.panel_list {
             if one_panel.has_ui() {
-                let panel_name = one_panel.name();
-                if let Some(state) = self.internal.panel_state.get_mut(panel_name) {
-                    let is_side_panel = self.app.is_side_panel();
-                    ui.horizontal(|ui| {
-                        ui.label(panel_name);
-                        if is_side_panel {
-                            ui.selectable_value(&mut state.open, PanelOpen::AsSideBar, "Sidebar");
-                        } else if state.open == PanelOpen::AsSideBar {
-                            // set the default to None (hidden)
-                            state.open = PanelOpen::None;
-                        }
-                        ui.selectable_value(&mut state.open, PanelOpen::AsWindows, "Windows");
-                        ui.selectable_value(&mut state.open, PanelOpen::None, "None");
-                    });
-                }
+                ui.horizontal(|ui| {
+                    ui.label(one_panel.name());
+                    let panel_state = one_panel.state_mut();
+                    if is_side_panel {
+                        ui.selectable_value(&mut panel_state.open, PanelOpen::AsSideBar, "Sidebar");
+                    } else if panel_state.open == PanelOpen::AsSideBar {
+                        // set the default to None (hidden)
+                        panel_state.open = PanelOpen::None;
+                    }
+                    ui.selectable_value(&mut panel_state.open, PanelOpen::AsWindows, "Windows");
+                    ui.selectable_value(&mut panel_state.open, PanelOpen::None, "None");
+                });
             }
         }
     }
