@@ -5,7 +5,7 @@ default-members = ["."]
 
 [package]
 name = "bladvak"
-version = "1.7.2"
+version = "1.7.3"
 edition = "2024"
 description = "Base egui/eframe app - bladvak means 'pickaxe' in Gobbledegook"
 license = "MIT"
