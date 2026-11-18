@@ -428,23 +428,9 @@ where
                     }
                     if self.app.panel_options_as_menu() && !self.panel_list.is_empty() {
                         ui.menu_button("Panels", |ui| {
-                            ui.menu_button("All", |ui| {
-                                if ui.button(PanelOpen::AsSideBar.to_string()).clicked() {
-                                    for one_panel in &mut self.panel_list {
-                                        one_panel.state_mut().open = PanelOpen::AsSideBar;
-                                    }
-                                }
-                                if ui.button(PanelOpen::AsWindows.to_string()).clicked() {
-                                    for one_panel in &mut self.panel_list {
-                                        one_panel.state_mut().open = PanelOpen::AsWindows;
-                                    }
-                                }
-                                if ui.button(PanelOpen::None.to_string()).clicked() {
-                                    for one_panel in &mut self.panel_list {
-                                        one_panel.state_mut().open = PanelOpen::None;
-                                    }
-                                }
-                            });
+                            if self.panel_list.len() > 1 {
+                                self.show_menu_panel_all(ui);
+                            }
                             for one_panel in &mut self.panel_list {
                                 // Check if plugin has a UI
                                 if !one_panel.has_ui() {
@@ -624,6 +610,27 @@ where
             return Some(saved_app_state);
         }
         None
+    }
+
+    /// show menu panel `All`
+    fn show_menu_panel_all(&mut self, ui: &mut egui::Ui) {
+        ui.menu_button("All", |ui| {
+            if ui.button(PanelOpen::AsSideBar.to_string()).clicked() {
+                for one_panel in &mut self.panel_list {
+                    one_panel.state_mut().open = PanelOpen::AsSideBar;
+                }
+            }
+            if ui.button(PanelOpen::AsWindows.to_string()).clicked() {
+                for one_panel in &mut self.panel_list {
+                    one_panel.state_mut().open = PanelOpen::AsWindows;
+                }
+            }
+            if ui.button(PanelOpen::None.to_string()).clicked() {
+                for one_panel in &mut self.panel_list {
+                    one_panel.state_mut().open = PanelOpen::None;
+                }
+            }
+        });
     }
 }
 
