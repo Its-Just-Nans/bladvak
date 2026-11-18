@@ -6,7 +6,7 @@ use std::{
     slice::{Iter, IterMut},
 };
 
-use eframe::egui::{self, Id, Modal};
+use eframe::egui::{self, Id, Modal, ScrollArea};
 
 /// Document trait
 pub trait DocumentTrait {
@@ -173,30 +173,32 @@ where
         let mut to_remove = None;
         let mut to_duplicate = None;
 
-        for (idx, one_doc) in self.inner.iter().enumerate() {
-            ui.horizontal(|ui| {
-                ui.selectable_value(&mut current_idx, idx, format!("{}", one_doc.name()))
-                    .context_menu(|ui| {
-                        if ui.button("Change name").clicked() {
-                            self.change_name_modal = Some(ChangeNameModal {
-                                current_name: one_doc.path().to_string_lossy().to_string(),
-                                index: idx,
-                            });
-                        }
-                        if ui.button("Duplicate").clicked() {
-                            to_duplicate = Some(idx);
-                        }
+        ScrollArea::horizontal().show(ui, |ui| {
+            for (idx, one_doc) in self.inner.iter().enumerate() {
+                ui.horizontal(|ui| {
+                    ui.selectable_value(&mut current_idx, idx, format!("{}", one_doc.name()))
+                        .context_menu(|ui| {
+                            if ui.button("Change name").clicked() {
+                                self.change_name_modal = Some(ChangeNameModal {
+                                    current_name: one_doc.path().to_string_lossy().to_string(),
+                                    index: idx,
+                                });
+                            }
+                            if ui.button("Duplicate").clicked() {
+                                to_duplicate = Some(idx);
+                            }
 
-                        if ui.button("Close").clicked() {
-                            to_remove = Some(idx);
-                        }
-                    });
-                if ui.button("x").clicked() {
-                    to_remove = Some(idx);
-                }
-            });
-            ui.separator();
-        }
+                            if ui.button("Close").clicked() {
+                                to_remove = Some(idx);
+                            }
+                        });
+                    if ui.button("x").clicked() {
+                        to_remove = Some(idx);
+                    }
+                    ui.separator();
+                });
+            }
+        });
         self.current_idx = current_idx;
         if let Some(index) = to_duplicate
             && let Some(doc) = self.get(index)
