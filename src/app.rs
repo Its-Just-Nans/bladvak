@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(target_arch = "wasm32")]
 use std::sync::mpsc::Sender;
 use std::{
+    collections::BTreeMap,
     fmt::{Debug, Display},
     sync::mpsc::{Receiver, channel},
 };
@@ -200,10 +201,12 @@ pub struct PanelState {
 }
 
 /// Bladvak internal saved state
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct BladvakSavedState {
     /// settings
     pub(crate) settings: Settings,
+    /// Panel state
+    pub(crate) panel_state: BTreeMap<String, PanelState>,
 }
 
 /// App wrapper
@@ -269,7 +272,54 @@ where
                 Err(err) => (M::default(), Some(err)),
             };
         let panel_list = app.panel_list();
-        let bladvak_internal = saved_internal.unwrap_or_default();
+        let bladvak_internal = if let Some(saved_state) = saved_internal {
+            let hashet_saved = saved_state
+                .panel_state
+                .iter()
+                .map(|p| p.0.as_str())
+                .collect::<std::collections::HashSet<_>>();
+            let hashet_current = panel_list
+                .iter()
+                .map(|p| p.name())
+                .collect::<std::collections::HashSet<_>>();
+            if hashet_saved == hashet_current {
+                // maybe add a check on the key of the panel_list
+                log::info!("Using saved panels state");
+                saved_state
+            } else {
+                // new state with old panel
+                let BladvakSavedState {
+                    settings: old_settings,
+                    panel_state: old_panel_state,
+                } = saved_state;
+                log::info!("Trying to use old saved panels state");
+                let mut new_panel_state = BTreeMap::new();
+                for one_panel in &panel_list {
+                    let is_panel_present = old_panel_state
+                        .iter()
+                        .find(|panel| panel.0 == one_panel.name());
+                    if let Some(saved_panel_state) = is_panel_present {
+                        new_panel_state
+                            .insert(one_panel.name().to_string(), saved_panel_state.1.clone());
+                    } else {
+                        new_panel_state.insert(one_panel.name().to_string(), PanelState::default());
+                    }
+                }
+                BladvakSavedState {
+                    settings: old_settings,
+                    panel_state: new_panel_state,
+                }
+            }
+        } else {
+            let mut panel_state = BTreeMap::new();
+            for one_panel in &panel_list {
+                panel_state.insert(one_panel.name().to_string(), PanelState::default());
+            }
+            BladvakSavedState {
+                settings: Settings::default(),
+                panel_state,
+            }
+        };
         if let Some(err) = creation_error {
             error_manager.add_error(err);
         }
@@ -604,6 +654,12 @@ where
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
         self.app.on_save();
+        let new_panel_state = self
+            .panel_list
+            .iter()
+            .map(|p| (p.name().to_string(), p.state().clone()))
+            .collect();
+        self.internal.panel_state = new_panel_state;
         eframe::set_value(storage, eframe::APP_KEY, self);
     }
 
