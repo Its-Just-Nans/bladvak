@@ -422,9 +422,17 @@ where
             egui::MenuBar::new().ui(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     self.app.menu_file(ui, &mut self.error_manager);
-                    if self.app.is_open_button() && ui.button("Open").clicked() {
-                        ui.close();
-                        self.file_handler.handle_file_open();
+                    if self.app.is_open_button() {
+                        ui.menu_button("Open", |ui| {
+                            if ui.button("From storage").clicked() {
+                                ui.close();
+                                self.file_handler.handle_file_open();
+                            }
+                            if ui.button("From URL").clicked() {
+                                ui.close();
+                                self.file_handler.open_file_from_url();
+                            }
+                        });
                     }
                     if self.app.panel_options_as_menu() && !self.panel_list.is_empty() {
                         ui.menu_button("Panels", |ui| {
@@ -657,7 +665,7 @@ where
         if self.app.is_side_panel(&mut self.panel_list) {
             self.side_panel(ui);
         }
-
+        self.file_handler.ui(ui);
         self.central_panel(ui);
 
         match self.file_handler.handle_files(ui) {

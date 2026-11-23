@@ -42,6 +42,7 @@ rfd = "0.18.0"
 poll-promise = { version = "0.3", features = ["web"] }
 egui_plot = { version = "0.38.0" }
 image = "0.25.10"
+ehttp = { version = "0.7.3", features = ["json", "multipart", "native-async"] }
 
 
 # native:

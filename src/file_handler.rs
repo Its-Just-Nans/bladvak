@@ -1,6 +1,6 @@
 //! File handler
 
-use eframe::egui;
+use eframe::egui::{self, Id, Modal};
 use poll_promise::Promise;
 use std::{fmt::Debug, path::PathBuf, sync::Arc};
 
@@ -15,6 +15,15 @@ pub struct File {
     pub path: PathBuf,
 }
 
+impl Debug for File {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut debug_fmt = f.debug_struct("File");
+        debug_fmt.field("path", &self.path);
+        debug_fmt.field("data", &self.data.len());
+        debug_fmt.finish()
+    }
+}
+
 /// File Handler
 #[derive(Default, serde::Deserialize, serde::Serialize)]
 pub struct FileHandler {
@@ -25,10 +34,24 @@ pub struct FileHandler {
     /// File upload handling
     #[serde(skip)]
     pub file_upload: Option<Promise<Result<FileState, AppError>>>,
+
+    /// From URL settings
+    from_url: Option<(String, Method, String)>,
+}
+
+/// Method
+#[derive(Debug, PartialEq, Copy, Clone, serde::Deserialize, serde::Serialize)]
+pub(crate) enum Method {
+    /// GET
+    Get,
+    /// HEAD
+    Head,
+    /// POST
+    Post,
 }
 
 /// File state
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum FileState {
     /// File is not selected
     NotSelected,
@@ -48,6 +71,7 @@ impl Debug for FileHandler {
             let val = String::new();
             debug_fmt.field("file_upload", &val);
         }
+        debug_fmt.field("from_url", &self.from_url);
         debug_fmt.finish()
     }
 }
@@ -203,5 +227,97 @@ impl FileHandler {
         }
         self.handle_file_dropped(ctx);
         Ok(None)
+    }
+
+    /// Show ui of file handler
+    pub fn ui(&mut self, ui: &mut egui::Ui) {
+        let mut should_load = false;
+        if let Some((url, method, body)) = &mut self.from_url {
+            let modal = Modal::new(Id::unique("modal_file_handler_url")).show(ui.ctx(), |ui| {
+                ui.label("Load from URL");
+                ui.horizontal(|ui| {
+                    ui.selectable_value(method, Method::Get, "Get");
+                    ui.selectable_value(method, Method::Head, "Head");
+                    ui.selectable_value(method, Method::Post, "Post");
+                });
+                ui.horizontal(|ui| {
+                    ui.label("URL: ");
+                    ui.text_edit_singleline(url);
+                });
+                if *method == Method::Post {
+                    ui.text_edit_multiline(body);
+                }
+                egui::Sides::new().show(
+                    ui,
+                    |modal_ui| {
+                        if modal_ui.button("Cancel").clicked() {
+                            modal_ui.close();
+                        }
+                    },
+                    |modal_ui| {
+                        if modal_ui.button("Load").clicked() {
+                            should_load = true;
+                            modal_ui.close();
+                        }
+                    },
+                );
+            });
+            if should_load {
+                self.load_from_url();
+            }
+
+            if modal.should_close() {
+                self.from_url = None;
+            }
+        }
+    }
+
+    /// open modal for URL
+    pub fn open_file_from_url(&mut self) {
+        self.from_url = Some((
+            String::new(),
+            Method::Get,
+            r#"["posting some json"]"#.to_string(),
+        ));
+    }
+
+    /// Load from URL
+    fn load_from_url(&mut self) {
+        if let Some((url, method, body)) = &self.from_url {
+            log::info!("Loading from URL: {url}");
+            let request = match method {
+                Method::Get => ehttp::Request::get(url),
+                Method::Head => ehttp::Request::head(url),
+                Method::Post => ehttp::Request::post(url, body.as_bytes().to_vec()),
+            };
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                self.file_upload = Some(Promise::spawn_thread("file_upload_from_url", move || {
+                    let response = ehttp::fetch_blocking(&request);
+                    match response {
+                        Ok(body) => Ok(FileState::Ready(File {
+                            data: body.bytes,
+                            path: PathBuf::from("from_url"),
+                        })),
+                        Err(err) => Err(err.into()),
+                    }
+                }));
+            }
+            #[cfg(target_arch = "wasm32")]
+            {
+                self.file_upload = Some(Promise::spawn_local(async {
+                    let resp_promise = ehttp::fetch_async(request);
+                    let response = resp_promise.await;
+                    match response {
+                        Ok(body) => Ok(FileState::Ready(File {
+                            data: body.bytes,
+                            path: PathBuf::from("from_url"),
+                        })),
+                        Err(err) => Err(err.into()),
+                    }
+                }));
+            }
+        }
+        self.from_url = None;
     }
 }
