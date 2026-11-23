@@ -293,12 +293,15 @@ impl FileHandler {
             #[cfg(not(target_arch = "wasm32"))]
             {
                 self.file_upload = Some(Promise::spawn_thread("file_upload_from_url", move || {
-                    let response = ehttp::fetch_blocking(&request);
-                    match response {
-                        Ok(body) => Ok(FileState::Ready(File {
-                            data: body.bytes,
-                            path: PathBuf::from("from_url"),
-                        })),
+                    let response_res = ehttp::fetch_blocking(&request);
+                    match response_res {
+                        Ok(response) => {
+                            let path = extract_filename(&response.url);
+                            Ok(FileState::Ready(File {
+                                data: response.bytes,
+                                path,
+                            }))
+                        }
                         Err(err) => Err(err.into()),
                     }
                 }));
@@ -307,12 +310,16 @@ impl FileHandler {
             {
                 self.file_upload = Some(Promise::spawn_local(async {
                     let resp_promise = ehttp::fetch_async(request);
-                    let response = resp_promise.await;
-                    match response {
-                        Ok(body) => Ok(FileState::Ready(File {
-                            data: body.bytes,
-                            path: PathBuf::from("from_url"),
-                        })),
+                    let response_res = resp_promise.await;
+
+                    match response_res {
+                        Ok(response) => {
+                            let path = extract_filename(&response.url);
+                            Ok(FileState::Ready(File {
+                                data: response.bytes,
+                                path,
+                            }))
+                        }
                         Err(err) => Err(err.into()),
                     }
                 }));
@@ -320,4 +327,19 @@ impl FileHandler {
         }
         self.from_url = None;
     }
+}
+
+/// extract filename
+fn extract_filename(url: &str) -> PathBuf {
+    // url deps is too big
+    let filename = url
+        .split('?')
+        .next()
+        .unwrap_or(url)
+        .rsplit('/')
+        .next()
+        .filter(|s| !s.is_empty())
+        .unwrap_or("file_from_url.bin");
+
+    PathBuf::from(filename)
 }
