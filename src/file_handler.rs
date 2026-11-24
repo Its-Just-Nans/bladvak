@@ -1,6 +1,7 @@
 //! File handler
 
-use eframe::egui::{self, Id, Modal};
+use eframe::egui::{self, DroppedFile, Id, Modal};
+use ehttp::Request;
 use poll_promise::Promise;
 use std::{fmt::Debug, path::PathBuf, sync::Arc};
 
@@ -29,7 +30,7 @@ impl Debug for File {
 pub struct FileHandler {
     /// Dropped files handler
     #[serde(skip)]
-    pub dropped_files: Vec<Arc<dyn egui::DroppedFile + Send + Sync>>,
+    pub files_queue: Vec<FileType>,
 
     /// File upload handling
     #[serde(skip)]
@@ -37,6 +38,17 @@ pub struct FileHandler {
 
     /// From URL settings
     from_url: Option<(String, Method, String, bool)>,
+}
+
+/// File type
+#[derive(Debug)]
+pub enum FileType {
+    /// Dropped file
+    Dropped(Arc<dyn egui::DroppedFile + Send + Sync>),
+    /// From a path
+    Path(PathBuf),
+    /// From an URL
+    Url(Request),
 }
 
 /// Method
@@ -66,7 +78,7 @@ pub enum FileState {
 impl Debug for FileHandler {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut debug_fmt = f.debug_struct("FileHandler");
-        debug_fmt.field("dropped_files", &self.dropped_files);
+        debug_fmt.field("files_queue", &self.files_queue);
         if self.file_upload.is_some() {
             let val = String::new();
             debug_fmt.field("file_upload", &val);
@@ -102,21 +114,7 @@ impl FileHandler {
         self.file_upload = Some(Promise::spawn_thread("slow", move || {
             if let Some(path_buf) = rfd::FileDialog::new().pick_file() {
                 // read file as string
-                if let Some(path) = path_buf.to_str() {
-                    let buf = std::fs::read(path);
-                    let buf = match buf {
-                        Ok(v) => v,
-                        Err(e) => {
-                            log::warn!("{e:?}");
-                            return Err(AppError::new(e.to_string()));
-                        }
-                    };
-                    return Ok(FileState::Ready(File {
-                        data: buf,
-                        path: path_buf,
-                    }));
-                }
-                return Err(AppError::new("Invalid file path".to_string()));
+                return load_from_path(path_buf);
             }
             // no file selected
             Ok(FileState::NotSelected)
@@ -132,60 +130,33 @@ impl FileHandler {
     fn handle_file_dropped(&mut self, ctx: &egui::Context) {
         ctx.input(|i| {
             for one_file in &i.raw.dropped_files {
-                self.dropped_files.push(one_file.clone());
+                self.files_queue.push(FileType::Dropped(one_file.clone()));
             }
         });
-        if self.dropped_files.is_empty() {
+        if self.files_queue.is_empty() {
             return;
         }
-        let file = self.dropped_files.remove(0);
+        let file = self.files_queue.remove(0);
         #[cfg(not(target_arch = "wasm32"))]
         {
-            self.file_upload = Some(Promise::spawn_thread("slow", move || {
-                let path = file.path();
-                let buf = std::fs::read(path);
-                let buf = match buf {
-                    Ok(v) => v,
-                    Err(e) => {
-                        log::warn!("{e:?}");
-                        return Err(AppError::new(e.to_string()));
-                    }
-                };
-                Ok(FileState::Ready(File {
-                    data: buf,
-                    path: path.to_path_buf(),
-                }))
+            self.file_upload = Some(Promise::spawn_thread("slow", move || match file {
+                FileType::Dropped(dropped_file) => load_from_dropped_file(&dropped_file),
+                FileType::Url(req) => load_from_url(&req),
+                FileType::Path(path) => load_from_path(path),
             }));
         }
         #[cfg(target_arch = "wasm32")]
         {
             self.file_upload = Some(Promise::spawn_local(async move {
-                let path = file.path();
-                if let Ok(buf) = file.bytes_async().await {
-                    return Ok(FileState::Ready(File {
-                        data: buf,
-                        path: path.to_path_buf(),
-                    }));
+                match file {
+                    FileType::Dropped(dropped_file) => {
+                        load_from_dropped_file_async(dropped_file).await
+                    }
+                    FileType::Url(req) => load_from_url_async(req).await,
+                    FileType::Path(_path) => return Err("Cannot load from path in WASM".into()),
                 }
-                // no file selected
-                Ok(FileState::NotSelected)
             }));
         }
-        // if cfg!(not(target_arch = "wasm32")) {
-        //     let path = file.path();
-        //     let file = read(path)?;
-        //     return Ok(Some(File {
-        //         data: file,
-        //         path: path.to_path_buf(),
-        //     }));
-        // } else if cfg!(target_arch = "wasm32")
-        //     && let Some(bytes) = file.bytes.as_deref()
-        // {
-        //     return Ok(Some(File {
-        //         data: bytes.to_vec(),
-        //         path: file.path.unwrap_or(PathBuf::from(file.name)),
-        //     }));
-        // }
     }
 
     /// Handle the files
@@ -307,35 +278,13 @@ impl FileHandler {
             #[cfg(not(target_arch = "wasm32"))]
             {
                 self.file_upload = Some(Promise::spawn_thread("file_upload_from_url", move || {
-                    let response_res = ehttp::fetch_blocking(&request);
-                    match response_res {
-                        Ok(response) => {
-                            let path = extract_filename(&response.url);
-                            Ok(FileState::Ready(File {
-                                data: response.bytes,
-                                path,
-                            }))
-                        }
-                        Err(err) => Err(err.into()),
-                    }
+                    load_from_url(&request)
                 }));
             }
             #[cfg(target_arch = "wasm32")]
             {
                 self.file_upload = Some(Promise::spawn_local(async {
-                    let resp_promise = ehttp::fetch_async(request);
-                    let response_res = resp_promise.await;
-
-                    match response_res {
-                        Ok(response) => {
-                            let path = extract_filename(&response.url);
-                            Ok(FileState::Ready(File {
-                                data: response.bytes,
-                                path,
-                            }))
-                        }
-                        Err(err) => Err(err.into()),
-                    }
+                    load_from_url_async(request).await
                 }));
             }
         }
@@ -356,4 +305,94 @@ fn extract_filename(url: &str) -> PathBuf {
         .unwrap_or("file_from_url.bin");
 
     PathBuf::from(filename)
+}
+
+/// Load from Dropped file (WASM)
+#[cfg(not(target_arch = "wasm32"))]
+fn load_from_dropped_file(
+    file: &Arc<dyn DroppedFile + Send + Sync>,
+) -> Result<FileState, AppError> {
+    let path = file.path();
+    let buf = std::fs::read(path);
+    let buf = match buf {
+        Ok(v) => v,
+        Err(e) => {
+            log::warn!("{e:?}");
+            return Err(AppError::new(e.to_string()));
+        }
+    };
+    Ok(FileState::Ready(File {
+        data: buf,
+        path: path.to_path_buf(),
+    }))
+}
+
+/// Load from Dropped file (WASM)
+#[cfg(target_arch = "wasm32")]
+async fn load_from_dropped_file_async(
+    file: Arc<dyn DroppedFile + Send + Sync>,
+) -> Result<FileState, AppError> {
+    let path = file.path();
+    if let Ok(buf) = file.bytes_async().await {
+        return Ok(FileState::Ready(File {
+            data: buf,
+            path: path.to_path_buf(),
+        }));
+    }
+    // no file selected
+    Ok(FileState::NotSelected)
+}
+
+/// Load from URL
+#[cfg(not(target_arch = "wasm32"))]
+fn load_from_url(req: &Request) -> Result<FileState, AppError> {
+    let response_res = ehttp::fetch_blocking(req);
+    match response_res {
+        Ok(response) => {
+            let path = extract_filename(&response.url);
+            Ok(FileState::Ready(File {
+                data: response.bytes,
+                path,
+            }))
+        }
+        Err(err) => Err(err.into()),
+    }
+}
+
+/// Load from url async (WASM)
+#[cfg(target_arch = "wasm32")]
+async fn load_from_url_async(req: Request) -> Result<FileState, AppError> {
+    let resp_promise = ehttp::fetch_async(req);
+    let response_res = resp_promise.await;
+
+    match response_res {
+        Ok(response) => {
+            let path = extract_filename(&response.url);
+            Ok(FileState::Ready(File {
+                data: response.bytes,
+                path,
+            }))
+        }
+        Err(err) => Err(err.into()),
+    }
+}
+
+/// Load from path
+#[cfg(not(target_arch = "wasm32"))]
+fn load_from_path(path_buf: PathBuf) -> Result<FileState, AppError> {
+    if let Some(path) = path_buf.to_str() {
+        let buf = std::fs::read(path);
+        let buf = match buf {
+            Ok(v) => v,
+            Err(e) => {
+                log::warn!("{e:?}");
+                return Err(AppError::new(e.to_string()));
+            }
+        };
+        return Ok(FileState::Ready(File {
+            data: buf,
+            path: path_buf,
+        }));
+    }
+    Err(AppError::new("Invalid file path".to_string()))
 }
