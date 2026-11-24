@@ -36,7 +36,7 @@ pub struct FileHandler {
     pub file_upload: Option<Promise<Result<FileState, AppError>>>,
 
     /// From URL settings
-    from_url: Option<(String, Method, String)>,
+    from_url: Option<(String, Method, String, bool)>,
 }
 
 /// Method
@@ -232,19 +232,20 @@ impl FileHandler {
     /// Show ui of file handler
     pub fn ui(&mut self, ui: &mut egui::Ui) {
         let mut should_load = false;
-        if let Some((url, method, body)) = &mut self.from_url {
+        if let Some((url, method, body, is_json)) = &mut self.from_url {
             let modal = Modal::new(Id::unique("modal_file_handler_url")).show(ui.ctx(), |ui| {
                 ui.label("Load from URL");
                 ui.horizontal(|ui| {
-                    ui.selectable_value(method, Method::Get, "Get");
-                    ui.selectable_value(method, Method::Head, "Head");
-                    ui.selectable_value(method, Method::Post, "Post");
+                    ui.selectable_value(method, Method::Get, "GET");
+                    ui.selectable_value(method, Method::Head, "HEAD");
+                    ui.selectable_value(method, Method::Post, "POST");
                 });
                 ui.horizontal(|ui| {
                     ui.label("URL: ");
                     ui.text_edit_singleline(url);
                 });
                 if *method == Method::Post {
+                    ui.checkbox(&mut *is_json, "Is JSON");
                     ui.text_edit_multiline(body);
                 }
                 egui::Sides::new().show(
@@ -278,17 +279,30 @@ impl FileHandler {
             String::new(),
             Method::Get,
             r#"["posting some json"]"#.to_string(),
+            true,
         ));
     }
 
     /// Load from URL
     fn load_from_url(&mut self) {
-        if let Some((url, method, body)) = &self.from_url {
+        if let Some((url, method, body, is_json)) = &self.from_url {
             log::info!("Loading from URL: {url}");
             let request = match method {
                 Method::Get => ehttp::Request::get(url),
                 Method::Head => ehttp::Request::head(url),
-                Method::Post => ehttp::Request::post(url, body.as_bytes().to_vec()),
+                Method::Post => {
+                    if *is_json {
+                        ehttp::Request {
+                            headers: ehttp::Headers::new(&[
+                                ("Accept", "*/*"),
+                                ("Content-Type", "application/json; charset=utf-8"),
+                            ]),
+                            ..ehttp::Request::post(url, body.as_bytes().to_vec())
+                        }
+                    } else {
+                        ehttp::Request::post(url, body.as_bytes().to_vec())
+                    }
+                }
             };
             #[cfg(not(target_arch = "wasm32"))]
             {
