@@ -29,6 +29,7 @@ pub use file_handler::File;
 pub use eframe;
 pub use egui_extras;
 pub use egui_plot;
+pub use ehttp;
 pub use log;
 pub use rfd;
 pub use serde;
